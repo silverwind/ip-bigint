@@ -37,16 +37,15 @@ module.exports.parse = ip => {
   return {num, version};
 };
 
-module.exports.stringify = ({num, version}) => {
+module.exports.stringify = ({num, version} = {}) => {
   if (typeof num !== "bigint") throw new Error(`Expected a BigInt`);
   if (![4, 6].includes(version)) throw new Error(`Invalid version: ${version}`);
-
-  if (version === 4 && !(BigInt(0) < num < max4)) throw new Error(`Invalid num: ${num}`);
-  if (version === 6 && !(BigInt(0) < num < max6)) throw new Error(`Invalid num: ${num}`);
+  if (!(BigInt(0) < num < (version === 4 ? max4 : max6))) throw new Error(`Invalid num: ${num}`);
 
   let step = version === 4 ? BigInt(24) : BigInt(112);
   let remain = num;
   const parts = [];
+
   while (step > BigInt(0)) {
     const divisor = BigInt(2) ** BigInt(step);
     parts.push(remain / divisor);

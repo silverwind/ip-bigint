@@ -26,6 +26,12 @@ const main = async () => {
   assert.deepEqual(stringify(parse("::ffff:ffff")), "::ffff:ffff");
   assert.deepEqual(stringify(parse("123:456:ffff::")), "123:456:ffff::");
   assert.deepEqual(stringify(parse("123:456:0:0::ffff")), "123:456::ffff");
+  assert.throws(() => parse());
+  assert.throws(() => parse(""));
+  assert.throws(() => parse("0.0.0.256"));
+  assert.throws(() => stringify());
+  assert.throws(() => stringify({}));
+  assert.throws(() => stringify({num: BigInt(0)}));
 };
 
 main().then(exit).catch(exit);
