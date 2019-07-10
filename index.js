@@ -10,15 +10,15 @@ module.exports.parse = ip => {
   const version = isIp.version(ip);
   if (![4, 6].includes(version)) throw new Error(`Invalid IP address: ${ip}`);
 
-  let num = BigInt(0);
+  let number = BigInt(0);
   let exp = BigInt(0);
 
   if (version === 4) {
     for (const n of ip.split(".").map(Number).reverse()) {
-      num += BigInt(n) * (BigInt(2) ** BigInt(exp));
+      number += BigInt(n) * (BigInt(2) ** BigInt(exp));
       exp += BigInt(8);
     }
-    return {num, version};
+    return {number, version};
   } else if (version === 6) {
     let ipv4mapped = false;
     if (ip.includes(".")) {
@@ -43,27 +43,27 @@ module.exports.parse = ip => {
     }
 
     for (const n of parts.map(part => part ? `0x${part}` : `0`).map(Number).reverse()) {
-      num += BigInt(n) * (BigInt(2) ** BigInt(exp));
+      number += BigInt(n) * (BigInt(2) ** BigInt(exp));
       exp += BigInt(16);
     }
 
-    return {num, version, ipv4mapped};
+    return {number, version, ipv4mapped};
   }
 };
 
-module.exports.stringify = ({num, version, ipv4mapped} = {}) => {
-  if (typeof num !== "bigint") throw new Error(`Expected a BigInt`);
+module.exports.stringify = ({number, version, ipv4mapped} = {}) => {
+  if (typeof number !== "bigint") throw new Error(`Expected a BigInt`);
   if (![4, 6].includes(version)) throw new Error(`Invalid version: ${version}`);
-  if (!(BigInt(0) < num < (version === 4 ? max4 : max6))) throw new Error(`Invalid num: ${num}`);
+  if (!(BigInt(0) < number < (version === 4 ? max4 : max6))) throw new Error(`Invalid number: ${number}`);
 
   let step = version === 4 ? BigInt(24) : BigInt(112);
-  let remain = num;
+  let remain = number;
   const parts = [];
 
   while (step > BigInt(0)) {
     const divisor = BigInt(2) ** BigInt(step);
     parts.push(remain / divisor);
-    remain = num % divisor;
+    remain = number % divisor;
     step -= BigInt(version === 4 ? 8 : 16);
   }
   parts.push(remain);

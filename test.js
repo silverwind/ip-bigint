@@ -9,10 +9,10 @@ const exit = err => {
 };
 
 const main = async () => {
-  assert.deepEqual(parse("0.0.0.0"), {num: BigInt(0), version: 4});
-  assert.deepEqual(parse("255.255.255.255"), {num: max4, version: 4});
-  assert.deepEqual(parse("::"), {num: BigInt(0), version: 6, ipv4mapped: false});
-  assert.deepEqual(parse("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"), {num: max6, version: 6, ipv4mapped: false});
+  assert.deepEqual(parse("0.0.0.0"), {number: BigInt(0), version: 4});
+  assert.deepEqual(parse("255.255.255.255"), {number: max4, version: 4});
+  assert.deepEqual(parse("::"), {number: BigInt(0), version: 6, ipv4mapped: false});
+  assert.deepEqual(parse("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"), {number: max6, version: 6, ipv4mapped: false});
   assert.deepEqual(stringify(parse("0.0.0.255")), "0.0.0.255");
   assert.deepEqual(stringify(parse("0.0.255.255")), "0.0.255.255");
   assert.deepEqual(stringify(parse("0.255.16.255")), "0.255.16.255");
