@@ -15,7 +15,7 @@ $ npm i ip-bigint
 const {parse, stringify} = require("ip-bigint");
 
 const {num, version} = parse("2001:db8::");
-// => {number: 42540766411282592856903984951653826560n, version: 6, ipv4mapped: false}
+// => {number: 42540766411282592856903984951653826560n, version: 6}
 const ip = stringify({number, version});
 // => "2001:db8::""
 
@@ -25,14 +25,14 @@ const ip = stringify({number, version});
 
 ### parse(ip)
 
-Parse a IP address string.
+Parse a IP address string to a object.
 
 For IPv4 returns `{number, version}`.
-For IPv6 returns `{number, version, ipv4mapped}`.
+For IPv6 returns `{number, version, [ipv4mapped], [scopeid]}`.
 
-### stringify({number, version})
+### stringify({number, version, [ipv4mapped], [scopeid]})
 
-Convert a parsed IP object to string. Returns `ip`. For IPv6, `ip` is normalized to the "best representation" all-lowercase shortest possible form.
+Convert a object to string. Returns `ip`. For IPv6, `ip` is normalized to the "best representation" all-lowercase shortest possible form.
 
 ### Constants
 

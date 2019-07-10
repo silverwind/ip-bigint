@@ -20,9 +20,10 @@ module.exports.parse = ip => {
     }
     return {number, version};
   } else if (version === 6) {
-    let ipv4mapped = false;
+    const result = {};
+
     if (ip.includes(".")) {
-      ipv4mapped = true;
+      result.ipv4mapped = true;
       ip = ip.split(":").map(part => {
         if (part.includes(".")) {
           const digits = part.split(".").map(str => Number(str).toString(16).padStart(2, "0"));
@@ -31,6 +32,12 @@ module.exports.parse = ip => {
           return part;
         }
       }).join(":");
+    }
+
+    if (ip.includes("%")) {
+      let scopeid;
+      [, ip, scopeid] = /(.+)%(.+)/.exec(ip);
+      result.scopeid = scopeid;
     }
 
     const parts = ip.split(":");
@@ -47,11 +54,13 @@ module.exports.parse = ip => {
       exp += BigInt(16);
     }
 
-    return {number, version, ipv4mapped};
+    result.number = number;
+    result.version = version;
+    return result;
   }
 };
 
-module.exports.stringify = ({number, version, ipv4mapped} = {}) => {
+module.exports.stringify = ({number, version, ipv4mapped, scopeid} = {}) => {
   if (typeof number !== "bigint") throw new Error(`Expected a BigInt`);
   if (![4, 6].includes(version)) throw new Error(`Invalid version: ${version}`);
   if (!(BigInt(0) < number < (version === 4 ? max4 : max6))) throw new Error(`Invalid number: ${number}`);
@@ -83,6 +92,10 @@ module.exports.stringify = ({number, version, ipv4mapped} = {}) => {
       }
     } else {
       ip = parts.map(n => Number(n).toString(16)).join(":");
+    }
+
+    if (scopeid) {
+      ip = `${ip}%${scopeid}`;
     }
 
     return ipv6Normalize(ip);
