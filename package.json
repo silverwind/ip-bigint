@@ -1,6 +1,6 @@
 {
   "name": "ip-bigint",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "description": "Convert IPv4 and IPv6 addresses to native BigInt and vice-versa",
   "author": "silverwind <me@silverwind.io>",
   "repository": "silverwind/ip-bigint",
