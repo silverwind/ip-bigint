@@ -1,7 +1,6 @@
 "use strict";
 
 const isIP = require("is-ip");
-const ipv6Normalize = require("ipv6-normalize");
 
 const max4 = module.exports.max4 = BigInt(2) ** BigInt(32) - BigInt(1);
 const max6 = module.exports.max6 = BigInt(2) ** BigInt(128) - BigInt(1);
@@ -98,6 +97,6 @@ module.exports.stringify = ({number, version, ipv4mapped, scopeid} = {}) => {
       ip = `${ip}%${scopeid}`;
     }
 
-    return ipv6Normalize(ip);
+    return ip.replace(/\b:?(?:0+:?){2,}/, "::");
   }
 };

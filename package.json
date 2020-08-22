@@ -15,14 +15,13 @@
     "index.js"
   ],
   "dependencies": {
-    "ipv6-normalize": "1.0.1",
     "is-ip": "3.1.0"
   },
   "devDependencies": {
     "eslint": "7.7.0",
     "eslint-config-silverwind": "18.0.3",
-    "updates": "10.3.5",
     "jest": "26.4.1",
+    "updates": "10.3.5",
     "versions": "8.4.3"
   },
   "keywords": [
