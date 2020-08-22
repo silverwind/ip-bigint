@@ -1,5 +1,2 @@
 root: true
-extends: eslint-config-silverwind
-
-globals:
-  BigInt: false
+extends: silverwind

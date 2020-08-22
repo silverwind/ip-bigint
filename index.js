@@ -1,13 +1,13 @@
 "use strict";
 
-const isIp = require("is-ip");
+const isIP = require("is-ip");
 const ipv6Normalize = require("ipv6-normalize");
 
 const max4 = module.exports.max4 = BigInt(2) ** BigInt(32) - BigInt(1);
 const max6 = module.exports.max6 = BigInt(2) ** BigInt(128) - BigInt(1);
 
 module.exports.parse = ip => {
-  const version = isIp.version(ip);
+  const version = isIP.version(ip);
   if (![4, 6].includes(version)) throw new Error(`Invalid IP address: ${ip}`);
 
   let number = BigInt(0);

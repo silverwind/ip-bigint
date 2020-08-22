@@ -1,12 +1,12 @@
 # ip-bigint
-[![](https://img.shields.io/npm/v/ip-bigint.svg?style=flat)](https://www.npmjs.org/package/ip-bigint) [![](https://img.shields.io/npm/dm/ip-bigint.svg)](https://www.npmjs.org/package/ip-bigint) [![](https://api.travis-ci.org/silverwind/ip-bigint.svg?style=flat)](https://travis-ci.org/silverwind/ip-bigint)
+[![](https://img.shields.io/npm/v/ip-bigint.svg?style=flat)](https://www.npmjs.org/package/ip-bigint) [![](https://img.shields.io/npm/dm/ip-bigint.svg)](https://www.npmjs.org/package/ip-bigint)
 
 > Convert IPv4 and IPv6 addresses to native BigInt and vice-versa
 
-## Installation
+## Install
 
 ```
-$ npm i ip-bigint
+npm i ip-bigint
 ```
 
 ## Example
