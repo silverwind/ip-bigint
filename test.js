@@ -3,9 +3,9 @@
 const {parse, stringify, max4, max6} = require(".");
 
 test("parse and stringify", () => {
-  expect(parse("0.0.0.0")).toEqual({number: BigInt(0), version: 4});
+  expect(parse("0.0.0.0")).toEqual({number: 0n, version: 4});
   expect(parse("255.255.255.255")).toEqual({number: max4, version: 4});
-  expect(parse("::")).toEqual({number: BigInt(0), version: 6});
+  expect(parse("::")).toEqual({number: 0n, version: 6});
   expect(parse("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")).toEqual({number: max6, version: 6});
   expect(stringify(parse("0.0.0.255"))).toEqual("0.0.0.255");
   expect(stringify(parse("0.0.255.255"))).toEqual("0.0.255.255");
@@ -28,5 +28,5 @@ test("parse and stringify", () => {
   expect(() => parse("0.0.0.256")).toThrow();
   expect(() => stringify()).toThrow();
   expect(() => stringify({})).toThrow();
-  expect(() => stringify({num: BigInt(0)})).toThrow();
+  expect(() => stringify({number: 0n})).toThrow();
 });
