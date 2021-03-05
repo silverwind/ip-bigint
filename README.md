@@ -14,8 +14,9 @@ npm i ip-bigint
 ```js
 const {parse, stringify} = require("ip-bigint");
 
-const {num, version} = parse("2001:db8::");
-// => {number: 42540766411282592856903984951653826560n, version: 6}
+const {number, version} = parse("2001:db8::");
+// => number: 42540766411282592856903984951653826560n
+// => version: 6
 const ip = stringify({number, version});
 // => "2001:db8::""
 
