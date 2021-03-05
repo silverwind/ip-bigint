@@ -7,7 +7,7 @@ const max6 = module.exports.max6 = 2n ** 128n - 1n;
 
 module.exports.parse = ip => {
   const version = isIP.version(ip);
-  if (![4, 6].includes(version)) throw new Error(`Invalid IP address: ${ip}`);
+  if (!version) throw new Error(`Invalid IP address: ${ip}`);
 
   let number = 0n;
   let exp = 0n;
