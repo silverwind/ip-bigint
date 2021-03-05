@@ -18,8 +18,7 @@ const {number, version} = parse("2001:db8::");
 // => number: 42540766411282592856903984951653826560n
 // => version: 6
 const ip = stringify({number, version});
-// => "2001:db8::""
-
+// => "2001:db8::"
 ```
 
 ## API
