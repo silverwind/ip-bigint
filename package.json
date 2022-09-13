@@ -5,24 +5,22 @@
   "author": "silverwind <me@silverwind.io>",
   "repository": "silverwind/ip-bigint",
   "license": "BSD-2-Clause",
-  "scripts": {
-    "test": "make test"
-  },
+  "type": "module",
   "engines": {
-    "node": ">=10.4.0"
+    "node": ">=14"
   },
   "files": [
     "index.js"
   ],
   "dependencies": {
-    "is-ip": "3.1.0"
+    "ip-regex": "5.0.0"
   },
   "devDependencies": {
-    "eslint": "7.21.0",
-    "eslint-config-silverwind": "29.0.0",
-    "jest": "26.6.3",
-    "updates": "11.4.3",
-    "versions": "8.4.5"
+    "eslint": "8.23.1",
+    "eslint-config-silverwind": "54.0.2",
+    "jest": "29.0.3",
+    "updates": "13.1.5",
+    "versions": "9.3.0"
   },
   "keywords": [
     "ip",

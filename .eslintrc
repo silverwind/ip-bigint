@@ -1,6 +1,0 @@
-root: true
-extends: silverwind
-
-parserOptions:
-  sourceType: module
-  ecmaVersion: 2020

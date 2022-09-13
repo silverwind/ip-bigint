@@ -1,12 +1,16 @@
-"use strict";
+import ipRegex from "ip-regex";
 
-const isIP = require("is-ip");
+export const max4 = 2n ** 32n - 1n;
+export const max6 = 2n ** 128n - 1n;
 
-const max4 = module.exports.max4 = 2n ** 32n - 1n;
-const max6 = module.exports.max6 = 2n ** 128n - 1n;
+function isIP(ip) {
+  if (ipRegex.v4({exact: true}).test(ip)) return 4;
+  if (ipRegex.v6({exact: true}).test(ip)) return 6;
+  return 0;
+}
 
-module.exports.parse = ip => {
-  const version = isIP.version(ip);
+export function parseIp(ip) {
+  const version = isIP(ip);
   if (!version) throw new Error(`Invalid IP address: ${ip}`);
 
   let number = 0n;
@@ -57,9 +61,9 @@ module.exports.parse = ip => {
     result.version = version;
     return result;
   }
-};
+}
 
-module.exports.stringify = ({number, version, ipv4mapped, scopeid} = {}) => {
+export function stringifyIp({number, version, ipv4mapped, scopeid} = {}) {
   if (typeof number !== "bigint") throw new Error(`Expected a BigInt`);
   if (![4, 6].includes(version)) throw new Error(`Invalid version: ${version}`);
   if (number < 0n || number > (version === 4 ? max4 : max6)) throw new Error(`Invalid number: ${number}`);
@@ -99,4 +103,4 @@ module.exports.stringify = ({number, version, ipv4mapped, scopeid} = {}) => {
 
     return ip.replace(/\b:?(?:0+:?){2,}/, "::");
   }
-};
+}
