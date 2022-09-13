@@ -12,11 +12,10 @@ npm i ip-bigint
 ## Example
 
 ```js
-const {parseIp, stringifyIp} = require("ip-bigint");
+import {parseIp, stringifyIp} from "ip-bigint";
 
 const {number, version} = parseIp("2001:db8::");
-// => number: 42540766411282592856903984951653826560n
-// => version: 6
+// => {number: 42540766411282592856903984951653826560n, version: 6}
 const ip = stringifyIp({number, version});
 // => "2001:db8::"
 ```
