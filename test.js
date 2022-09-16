@@ -1,5 +1,9 @@
 import {parseIp, stringifyIp, max4, max6} from "./index.js";
 
+function stringifyParsedIp(parsedIp) {
+  return JSON.stringify(parsedIp, (_, value) => typeof value === "bigint" ? value.toString() : value);
+}
+
 test("parseIp and stringifyIp", () => {
   expect(parseIp("0.0.0.0")).toEqual({number: 0n, version: 4});
   expect(parseIp("255.255.255.255")).toEqual({number: max4, version: 4});
@@ -27,4 +31,5 @@ test("parseIp and stringifyIp", () => {
   expect(() => stringifyIp()).toThrow();
   expect(() => stringifyIp({})).toThrow();
   expect(() => stringifyIp({number: 0n})).toThrow();
+  expect(stringifyParsedIp(parseIp("::"))).toEqual(`{"number":"0","version":6}`);
 });

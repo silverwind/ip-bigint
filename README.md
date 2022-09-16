@@ -24,7 +24,7 @@ const ip = stringifyIp({number, version});
 
 ### parseIp(ip)
 
-Parse a IP address string to a object.
+Parse a IP address string to a object (with null prototype).
 
 For IPv4 returns `{number, version}`.
 For IPv6 returns `{number, version, [ipv4mapped], [scopeid]}`.
