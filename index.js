@@ -3,9 +3,6 @@ import ipRegex from "ip-regex";
 export const max4 = 2n ** 32n - 1n;
 export const max6 = 2n ** 128n - 1n;
 
-const ParsedIp = function() {};
-ParsedIp.prototype = Object.create(null);
-
 function isIP(ip) {
   if (ipRegex.v4({exact: true}).test(ip)) return 4;
   if (ipRegex.v6({exact: true}).test(ip)) return 6;
@@ -16,7 +13,7 @@ export function parseIp(ip) {
   const version = isIP(ip);
   if (!version) throw new Error(`Invalid IP address: ${ip}`);
 
-  const result = new ParsedIp();
+  const result = Object.create(null);
   let number = 0n;
   let exp = 0n;
 
