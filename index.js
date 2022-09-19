@@ -27,7 +27,7 @@ export function parseIp(ip) {
     result.number = number;
     result.version = version;
     return result;
-  } else if (version === 6) {
+  } else {
     if (ip.includes(".")) {
       result.ipv4mapped = true;
       ip = ip.split(":").map(part => {
