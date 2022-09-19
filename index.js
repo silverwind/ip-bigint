@@ -22,7 +22,7 @@ export function parseIp(ip) {
 
   if (version === 4) {
     for (const n of ip.split(".").map(Number).reverse()) {
-      number += BigInt(n) * (2n ** BigInt(exp));
+      number += BigInt(n) * (2n ** exp);
       exp += 8n;
     }
 
@@ -78,10 +78,10 @@ export function stringifyIp({number, version, ipv4mapped, scopeid} = {}) {
   const parts = [];
 
   while (step > 0n) {
-    const divisor = 2n ** BigInt(step);
+    const divisor = 2n ** step;
     parts.push(remain / divisor);
     remain = number % divisor;
-    step -= BigInt(version === 4 ? 8 : 16);
+    step -= version === 4 ? 8n : 16n;
   }
   parts.push(remain);
 
