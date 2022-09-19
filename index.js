@@ -2,6 +2,7 @@ import ipRegex from "ip-regex";
 
 export const max4 = 2n ** 32n - 1n;
 export const max6 = 2n ** 128n - 1n;
+const emptyPartsRe = /\b:?(?:0+:?){2,}/;
 
 function isIP(ip) {
   if (ipRegex.v4({exact: true}).test(ip)) return 4;
@@ -18,8 +19,8 @@ export function parseIp(ip) {
   let exp = 0n;
 
   if (version === 4) {
-    for (const n of ip.split(".").map(Number).reverse()) {
-      number += BigInt(n) * (2n ** exp);
+    for (const n of ip.split(".").map(BigInt).reverse()) {
+      number += n * (2n ** exp);
       exp += 8n;
     }
 
@@ -54,8 +55,8 @@ export function parseIp(ip) {
       }
     }
 
-    for (const n of parts.map(part => part ? `0x${part}` : `0`).map(Number).reverse()) {
-      number += BigInt(n) * (2n ** BigInt(exp));
+    for (const n of parts.map(part => BigInt(parseInt(part || 0, 16))).reverse()) {
+      number += n * (2n ** exp);
       exp += 16n;
     }
 
@@ -71,6 +72,7 @@ export function stringifyIp({number, version, ipv4mapped, scopeid} = {}) {
   if (number < 0n || number > (version === 4 ? max4 : max6)) throw new Error(`Invalid number: ${number}`);
 
   let step = version === 4 ? 24n : 112n;
+  const stepReduction = version === 4 ? 8n : 16n;
   let remain = number;
   const parts = [];
 
@@ -78,7 +80,7 @@ export function stringifyIp({number, version, ipv4mapped, scopeid} = {}) {
     const divisor = 2n ** step;
     parts.push(remain / divisor);
     remain = number % divisor;
-    step -= version === 4 ? 8n : 16n;
+    step -= stepReduction;
   }
   parts.push(remain);
 
@@ -103,6 +105,6 @@ export function stringifyIp({number, version, ipv4mapped, scopeid} = {}) {
       ip = `${ip}%${scopeid}`;
     }
 
-    return ip.replace(/\b:?(?:0+:?){2,}/, "::");
+    return ip.replace(emptyPartsRe, "::");
   }
 }
