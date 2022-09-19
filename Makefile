@@ -10,6 +10,9 @@ test: node_modules
 	npx eslint --color .
 	NODE_OPTIONS="--experimental-vm-modules --no-warnings" npx jest --color
 
+bench: node_modules
+	@node bench.js
+
 .PHONY: unittest
 unittest: node_modules
 	NODE_OPTIONS="--experimental-vm-modules --no-warnings" npx jest --color --watchAll=true
