@@ -85,20 +85,19 @@ export function stringifyIp({number, version, ipv4mapped, scopeid} = {}) {
   parts.push(remain);
 
   if (version === 4) {
-    return parts.map(Number).join(".");
+    return parts.join(".");
   } else {
     let ip = "";
     if (ipv4mapped) {
-      for (let [index, num] of Object.entries(parts.map(Number))) {
-        index = Number(index);
+      for (const [index, num] of parts.entries()) {
         if (index < 6) {
           ip += `${num.toString(16)}:`;
         } else {
-          ip += `${String(num >> 8)}.${String(num & 255)}${index === 6 ? "." : ""}`;
+          ip += `${String(num >> 8n)}.${String(num & 255n)}${index === 6 ? "." : ""}`;
         }
       }
     } else {
-      ip = parts.map(n => Number(n).toString(16)).join(":");
+      ip = parts.map(n => n.toString(16)).join(":");
     }
 
     if (scopeid) {
