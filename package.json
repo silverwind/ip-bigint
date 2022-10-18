@@ -18,10 +18,10 @@
     "ip-regex": "5.0.0"
   },
   "devDependencies": {
-    "eslint": "8.24.0",
-    "eslint-config-silverwind": "55.0.0",
-    "updates": "13.1.7",
-    "versions": "9.3.2",
+    "eslint": "8.25.0",
+    "eslint-config-silverwind": "59.0.0",
+    "updates": "13.1.9",
+    "versions": "9.3.4",
     "vitest": "0.24.3"
   },
   "keywords": [
