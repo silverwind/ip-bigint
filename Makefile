@@ -5,17 +5,16 @@ node_modules: package-lock.json
 .PHONY: deps
 deps: node_modules
 
-.PHONY: test
-test: node_modules
+.PHONY: lint
+lint: node_modules
 	npx eslint --color .
-	NODE_OPTIONS="--experimental-vm-modules --no-warnings" npx jest --color
+
+.PHONY: test
+test: node_modules lint
+	npx vitest
 
 bench: node_modules
 	@node bench.js
-
-.PHONY: unittest
-unittest: node_modules
-	NODE_OPTIONS="--experimental-vm-modules --no-warnings" npx jest --color --watchAll=true
 
 .PHONY: publish
 publish: node_modules
