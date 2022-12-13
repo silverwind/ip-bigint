@@ -20,12 +20,5 @@
     "updates": "13.2.1",
     "versions": "10.2.4",
     "vitest": "0.25.3"
-  },
-  "keywords": [
-    "ip",
-    "ipv4",
-    "ipv6",
-    "ip-address",
-    "bigint"
-  ]
+  }
 }
