@@ -14,9 +14,6 @@
   "files": [
     "index.js"
   ],
-  "dependencies": {
-    "ip-regex": "5.0.0"
-  },
   "devDependencies": {
     "eslint": "8.28.0",
     "eslint-config-silverwind": "63.0.0",

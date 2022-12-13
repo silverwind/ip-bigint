@@ -29,6 +29,8 @@ Parse a IP address string to a object (with null prototype).
 For IPv4 returns `{number, version}`.
 For IPv6 returns `{number, version, [ipv4mapped], [scopeid]}`.
 
+There is only rudimentary validation that the passed string is actually an IP address. You are encouraged to validate yourself using modules like `ip-regex`.
+
 ### stringifyIp({number, version, [ipv4mapped], [scopeid]})
 
 Convert a object to string. Returns `ip`. For IPv6, `ip` is normalized to the "best representation" all-lowercase shortest possible form.

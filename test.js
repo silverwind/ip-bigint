@@ -27,7 +27,7 @@ test("parseIp and stringifyIp", () => {
   expect(stringifyIp(parseIp("::%en1"))).toEqual("::%en1");
   expect(() => parseIp()).toThrow();
   expect(() => parseIp("")).toThrow();
-  expect(() => parseIp("0.0.0.256")).toThrow();
+  expect(() => parseIp("1")).toThrow();
   expect(() => stringifyIp()).toThrow();
   expect(() => stringifyIp({})).toThrow();
   expect(() => stringifyIp({number: 0n})).toThrow();

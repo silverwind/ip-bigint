@@ -1,12 +1,10 @@
-import ipRegex from "ip-regex";
-
 export const max4 = 2n ** 32n - 1n;
 export const max6 = 2n ** 128n - 1n;
 const emptyPartsRe = /\b:?(?:0+:?){2,}/;
 
 function isIP(ip) {
-  if (ipRegex.v4({exact: true}).test(ip)) return 4;
-  if (ipRegex.v6({exact: true}).test(ip)) return 6;
+  if (ip.includes(":")) return 6;
+  if (ip.includes(".")) return 4;
   return 0;
 }
 
