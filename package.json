@@ -15,10 +15,10 @@
     "index.js"
   ],
   "devDependencies": {
-    "eslint": "8.39.0",
-    "eslint-config-silverwind": "66.0.0",
-    "updates": "14.1.0",
-    "versions": "11.0.0",
-    "vitest": "0.30.1"
+    "eslint": "8.41.0",
+    "eslint-config-silverwind": "73.0.0",
+    "updates": "14.1.1",
+    "versions": "11.0.1",
+    "vitest": "0.31.2"
   }
 }
