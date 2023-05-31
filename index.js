@@ -127,7 +127,11 @@ function compressIPv6(parts) {
       }
     }
   }
-  if (!longestSequence && currentSequence) longestSequence = currentSequence;
+  if (!longestSequence && currentSequence) {
+    longestSequence = currentSequence;
+  } else if (currentSequence && currentSequence.size > longestSequence.size) {
+    longestSequence = currentSequence;
+  }
 
   for (const index of longestSequence || []) {
     parts[index] = ":";
