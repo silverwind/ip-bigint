@@ -3,16 +3,10 @@
 
 > Convert IPv4 and IPv6 addresses to native BigInt and vice-versa
 
-## Install
-
-```
-npm i ip-bigint
-```
-
-## Example
+## Usage
 
 ```js
-import {parseIp, stringifyIp} from "ip-bigint";
+import {parseIp, stringifyIp, normalizeIp} from "ip-bigint";
 
 parseIp("2001:db8::");
 // => {number: 42540766411282592856903984951653826560n, version: 6}
