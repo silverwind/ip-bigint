@@ -1,9 +1,21 @@
 import {parseIp, stringifyIp} from "./index.js";
 
-const res = [];
-const t1 = performance.now();
-for (let i = 0; i < 1e5; i++) res.push(stringifyIp({number: BigInt(i), version: 6}));
-console.info(`stringifyIp: ${Math.round(performance.now() - t1)}ms`);
-const t2 = performance.now();
-for (const r of res) parseIp(r);
-console.info(`parseIp: ${Math.round(performance.now() - t2)}ms`);
+let t;
+const ip4s = [];
+const ip6s = [];
+
+t = performance.now();
+for (let i = 0; i < 1e5; i++) ip4s.push(stringifyIp({number: BigInt(i), version: 4}));
+console.info(`stringify v4: ${Math.round(performance.now() - t)}ms`);
+
+t = performance.now();
+for (let i = 0; i < 1e5; i++) ip6s.push(stringifyIp({number: BigInt(i), version: 6}));
+console.info(`stringify v6: ${Math.round(performance.now() - t)}ms`);
+
+t = performance.now();
+for (const ip of ip4s) parseIp(ip);
+console.info(`parse v4: ${Math.round(performance.now() - t)}ms`);
+
+t = performance.now();
+for (const ip of ip6s) parseIp(ip);
+console.info(`parse v6: ${Math.round(performance.now() - t)}ms`);
