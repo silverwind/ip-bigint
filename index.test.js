@@ -26,6 +26,7 @@ test("parseIp and stringifyIp", () => {
   expect(normalizeIp("::ffff:191.239.213.197")).toEqual("::ffff:191.239.213.197");
   expect(normalizeIp("::ffff:127.0.0.1")).toEqual("::ffff:127.0.0.1");
   expect(normalizeIp("::%en1")).toEqual("::%en1");
+  expect(normalizeIp("2001:0000:0000:0db8:0000:0000:0000:0001")).toEqual("2001:0:0:db8::1");
   expect(normalizeIp("1:2:0:4:5:6:7:8")).toEqual("1:2::4:5:6:7:8");
   expect(normalizeIp("0:0:0:4:5:6:7:8")).toEqual("::4:5:6:7:8");
   expect(normalizeIp("1:2:3:00:00::0")).toEqual("1:2:3::");
@@ -34,6 +35,7 @@ test("parseIp and stringifyIp", () => {
   expect(normalizeIp("1080::8:800:200C:417A")).toEqual("1080::8:800:200c:417a");
   expect(normalizeIp("1080::0:0:200C:417A")).toEqual("1080::200c:417a");
   expect(normalizeIp("2001:db8::0:0:1")).toEqual("2001:db8::1");
+  expect(normalizeIp("2001:0:0:0db8:0:0:0:1")).toEqual("2001:0:0:db8::1");
 
   expect(() => parseIp()).toThrow();
   expect(() => parseIp("")).toThrow();

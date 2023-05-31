@@ -1,6 +1,5 @@
 export const max4 = 2n ** 32n - 1n;
 export const max6 = 2n ** 128n - 1n;
-const emptyPartsRe = /\b:?(?:0+:?)+/;
 const isIP = ip => ip.includes(":") ? 6 : ip.includes(".") ? 4 : 0;
 
 export function parseIp(ip) {
@@ -89,18 +88,50 @@ export function stringifyIp({number, version, ipv4mapped, scopeid} = {}) {
           ip += `${String(num >> 8n)}.${String(num & 255n)}${index === 6 ? "." : ""}`;
         }
       }
+      ip = compressIPv6(ip.split(":"));
     } else {
-      ip = parts.map(n => n.toString(16)).join(":");
+      ip = compressIPv6(parts.map(n => n.toString(16)));
     }
 
     if (scopeid) {
       ip = `${ip}%${scopeid}`;
     }
 
-    return ip.replace(emptyPartsRe, "::");
+    return ip;
   }
 }
 
 export function normalizeIp(ip) {
   return stringifyIp(parseIp(ip));
+}
+
+// take the longest or first sequence of "0" segments and replace it with "::"
+function compressIPv6(parts) {
+  let longestSequence;
+  let currentSequence;
+  for (const [index, part] of parts.entries()) {
+    if (part === "0") {
+      if (!currentSequence) {
+        currentSequence = new Set([index]);
+      } else {
+        currentSequence.add(index);
+      }
+    } else {
+      if (currentSequence) {
+        if (!longestSequence) {
+          longestSequence = currentSequence;
+        } else if (currentSequence.size > longestSequence.size) {
+          longestSequence = currentSequence;
+        }
+        currentSequence = null;
+      }
+    }
+  }
+  if (!longestSequence && currentSequence) longestSequence = currentSequence;
+
+  for (const index of longestSequence || []) {
+    parts[index] = ":";
+  }
+
+  return parts.filter(Boolean).join(":").replace(/:{2,}/, "::");
 }
