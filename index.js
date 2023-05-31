@@ -1,6 +1,6 @@
 export const max4 = 2n ** 32n - 1n;
 export const max6 = 2n ** 128n - 1n;
-const emptyPartsRe = /\b:?(?:0+:?){2,}/;
+const emptyPartsRe = /\b:?(?:0+:?){1,}/;
 const isIP = ip => ip.includes(":") ? 6 : ip.includes(".") ? 4 : 0;
 
 export function parseIp(ip) {
