@@ -25,6 +25,7 @@ test("parseIp and stringifyIp", () => {
   expect(stringifyIp(parseIp("::ffff:191.239.213.197"))).toEqual("::ffff:191.239.213.197");
   expect(stringifyIp(parseIp("::ffff:127.0.0.1"))).toEqual("::ffff:127.0.0.1");
   expect(stringifyIp(parseIp("::%en1"))).toEqual("::%en1");
+  // expect(stringifyIp(parseIp("1:2:0:4:5:6:7:8"))).toEqual("1:2::4:5:6:7:8"); // TODO
   expect(() => parseIp()).toThrow();
   expect(() => parseIp("")).toThrow();
   expect(() => parseIp("1")).toThrow();
