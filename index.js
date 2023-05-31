@@ -1,6 +1,6 @@
 export const max4 = 2n ** 32n - 1n;
 export const max6 = 2n ** 128n - 1n;
-const emptyPartsRe = /\b:?(?:0+:?){1,}/;
+const emptyPartsRe = /\b:?(?:0+:?)+/;
 const isIP = ip => ip.includes(":") ? 6 : ip.includes(".") ? 4 : 0;
 
 export function parseIp(ip) {
@@ -99,4 +99,8 @@ export function stringifyIp({number, version, ipv4mapped, scopeid} = {}) {
 
     return ip.replace(emptyPartsRe, "::");
   }
+}
+
+export function normalizeIp(ip) {
+  return stringifyIp(parseIp(ip));
 }

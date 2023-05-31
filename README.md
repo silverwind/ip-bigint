@@ -14,10 +14,15 @@ npm i ip-bigint
 ```js
 import {parseIp, stringifyIp} from "ip-bigint";
 
-const {number, version} = parseIp("2001:db8::");
+parseIp("2001:db8::");
 // => {number: 42540766411282592856903984951653826560n, version: 6}
-const ip = stringifyIp({number, version});
+
+stringifyIp({number, version});
 // => "2001:db8::"
+
+normalizeIp("2001:db8::0:0:1")
+// => "2001:db8::1"
+
 ```
 
 ## API
@@ -34,6 +39,10 @@ There is only rudimentary validation that the passed string is actually an IP ad
 ### stringifyIp({number, version, [ipv4mapped], [scopeid]})
 
 Convert a object to string. Returns `ip`. For IPv6, `ip` is normalized to the "best representation" all-lowercase shortest possible form.
+
+### normalizeIp(ip)
+
+Round-trip an IP address through `parseIp` and `stringifyIp`, effectively normalizing its representation.
 
 ### Constants
 
