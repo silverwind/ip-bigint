@@ -50,9 +50,9 @@ test("parseIp and stringifyIp", () => {
   expect(normalizeIp("6620:1ff2::00000", {compress: false})).toEqual("6620:1ff2:0:0:0:0:0:0");
   expect(normalizeIp("::1", {compress: false})).toEqual("0:0:0:0:0:0:0:1");
   expect(normalizeIp("1::1", {compress: false})).toEqual("1:0:0:0:0:0:0:1");
+  expect(normalizeIp("01.02.03.04")).toEqual("1.2.3.4");
 
-  // TODO: these edge cases would be nice
-  // expect(normalizeIp("01.02.03.04")).toEqual("1.2.3.4");
+  // TODO: this edge case would be nice
   // expect(normalizeIp("::FFFF:34.90.242.162")).toEqual("::ffff:225a:f2a2");
 
   expect(() => parseIp()).toThrow();
