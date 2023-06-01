@@ -14,11 +14,15 @@ test("parseIp and stringifyIp", () => {
   expect(normalizeIp("0.0.0.255")).toEqual("0.0.0.255");
   expect(normalizeIp("000.0.00.255")).toEqual("0.0.0.255");
   expect(normalizeIp("0000.0.00.255")).toEqual("0.0.0.255");
+  expect(normalizeIp("01.02.03.04")).toEqual("1.2.3.4");
+  expect(normalizeIp("01.02.03.04", {hexify: true})).toEqual("1.2.3.4");
   expect(normalizeIp("0.0.255.255")).toEqual("0.0.255.255");
   expect(normalizeIp("0.255.16.255")).toEqual("0.255.16.255");
   expect(normalizeIp("128.0.0.255")).toEqual("128.0.0.255");
   expect(normalizeIp("100.200.100.200")).toEqual("100.200.100.200");
   expect(normalizeIp("::")).toEqual("::");
+  expect(normalizeIp("::0001")).toEqual("::1");
+  expect(normalizeIp("::0001", {hexify: true})).toEqual("::1");
   expect(normalizeIp("::ffff")).toEqual("::ffff");
   expect(normalizeIp("0::ffff")).toEqual("::ffff");
   expect(normalizeIp("::ffff:ffff")).toEqual("::ffff:ffff");
