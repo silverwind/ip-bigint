@@ -47,6 +47,9 @@ test("parseIp and stringifyIp", () => {
   expect(normalizeIp("6620:00000000000:1ff2::0")).toEqual("6620:0:1ff2::");
   expect(normalizeIp("6620:1ff2::0")).toEqual("6620:1ff2::");
   expect(normalizeIp("6620:1ff2::00000")).toEqual("6620:1ff2::");
+  expect(normalizeIp("6620:1ff2::00000", {compress: false})).toEqual("6620:1ff2:0:0:0:0:0:0");
+  expect(normalizeIp("::1", {compress: false})).toEqual("0:0:0:0:0:0:0:1");
+  expect(normalizeIp("1::1", {compress: false})).toEqual("1:0:0:0:0:0:0:1");
 
   expect(() => parseIp()).toThrow();
   expect(() => parseIp("")).toThrow();

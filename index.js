@@ -58,7 +58,7 @@ export function parseIp(ip) {
   }
 }
 
-export function stringifyIp({number, version, ipv4mapped, scopeid} = {}) {
+export function stringifyIp({number, version, ipv4mapped, scopeid} = {}, {compress = true} = {}) {
   if (typeof number !== "bigint") throw new Error(`Expected a BigInt`);
   if (![4, 6].includes(version)) throw new Error(`Invalid version: ${version}`);
   if (number < 0n || number > (version === 4 ? max4 : max6)) throw new Error(`Invalid number: ${number}`);
@@ -88,9 +88,15 @@ export function stringifyIp({number, version, ipv4mapped, scopeid} = {}) {
           ip += `${String(num >> 8n)}.${String(num & 255n)}${index === 6 ? "." : ""}`;
         }
       }
-      ip = compressIPv6(ip.split(":"));
+      if (compress) {
+        ip = compressIPv6(ip.split(":"));
+      }
     } else {
-      ip = compressIPv6(parts.map(n => n.toString(16)));
+      if (compress) {
+        ip = compressIPv6(parts.map(n => n.toString(16)));
+      } else {
+        ip = parts.map(n => n.toString(16)).join(":");
+      }
     }
 
     if (scopeid) {
@@ -101,8 +107,8 @@ export function stringifyIp({number, version, ipv4mapped, scopeid} = {}) {
   }
 }
 
-export function normalizeIp(ip) {
-  return stringifyIp(parseIp(ip));
+export function normalizeIp(ip, {compress = true} = {}) {
+  return stringifyIp(parseIp(ip), {compress});
 }
 
 // take the longest or first sequence of "0" segments and replace it with "::"

@@ -30,17 +30,27 @@ For IPv6 returns `{number, version, [ipv4mapped], [scopeid]}`.
 
 There is only rudimentary validation that the passed string is actually an IP address. You are encouraged to validate yourself using modules like `ip-regex`.
 
-### stringifyIp({number, version, [ipv4mapped], [scopeid]})
+### stringifyIp({number, version, [ipv4mapped], [scopeid]}, [opts])
 
-Convert a object to string. Returns `ip`. For IPv6, `ip` is normalized to the "best representation" all-lowercase shortest possible form.
+Convert a parsed object to IP adress string.
 
-### normalizeIp(ip)
+`opts`: Options `Object`
+  - `compress`: Whether to compress the IP. For IPv6, this means the "best representation" all-lowercase shortest possible form. Default: `true`.
+
+### normalizeIp(ip, [opts])
 
 Round-trip an IP address through `parseIp` and `stringifyIp`, effectively normalizing its representation.
 
-### Constants
+`opts`: Options `Object`
+  - `compress`: Whether to compress the IP. For IPv6, this means the "best representation" all-lowercase shortest possible form. Default: `true`.
 
-The module exports `max4` and `max6` properties which represent the biggest possible BigInt for IPv4 and IPv6 respectively.
+### max4
+
+A `BigInt` value that holds the biggest possible IPv4 address.
+
+### max6
+
+A `BigInt` value that holds the biggest possible IPv6 address.
 
 ## License
 
