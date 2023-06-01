@@ -51,6 +51,10 @@ test("parseIp and stringifyIp", () => {
   expect(normalizeIp("::1", {compress: false})).toEqual("0:0:0:0:0:0:0:1");
   expect(normalizeIp("1::1", {compress: false})).toEqual("1:0:0:0:0:0:0:1");
 
+  // TODO: these edge cases would be nice
+  // expect(normalizeIp("01.02.03.04")).toEqual("1.2.3.4");
+  // expect(normalizeIp("::FFFF:34.90.242.162")).toEqual("::ffff:225a:f2a2");
+
   expect(() => parseIp()).toThrow();
   expect(() => parseIp("")).toThrow();
   expect(() => parseIp("1")).toThrow();
