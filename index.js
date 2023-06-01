@@ -58,7 +58,7 @@ export function parseIp(ip) {
   }
 }
 
-export function stringifyIp({number, version, ipv4mapped, scopeid} = {}, {compress = true} = {}) {
+export function stringifyIp({number, version, ipv4mapped, scopeid} = {}, {compress = true, hexify = false} = {}) {
   if (typeof number !== "bigint") throw new Error(`Expected a BigInt`);
   if (![4, 6].includes(version)) throw new Error(`Invalid version: ${version}`);
   if (number < 0n || number > (version === 4 ? max4 : max6)) throw new Error(`Invalid number: ${number}`);
@@ -80,7 +80,7 @@ export function stringifyIp({number, version, ipv4mapped, scopeid} = {}, {compre
     return parts.join(".");
   } else {
     let ip = "";
-    if (ipv4mapped) {
+    if (ipv4mapped && !hexify) {
       for (const [index, num] of parts.entries()) {
         if (index < 6) {
           ip += `${num.toString(16)}:`;
@@ -107,8 +107,8 @@ export function stringifyIp({number, version, ipv4mapped, scopeid} = {}, {compre
   }
 }
 
-export function normalizeIp(ip, {compress = true} = {}) {
-  return stringifyIp(parseIp(ip), {compress});
+export function normalizeIp(ip, {compress = true, hexify = false} = {}) {
+  return stringifyIp(parseIp(ip), {compress, hexify});
 }
 
 // take the longest or first sequence of "0" segments and replace it with "::"
