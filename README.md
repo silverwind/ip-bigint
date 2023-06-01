@@ -8,13 +8,13 @@
 ```js
 import {parseIp, stringifyIp, normalizeIp} from "ip-bigint";
 
-parseIp("2001:db8::");
+const obj = parseIp("2001:db8::");
 // => {number: 42540766411282592856903984951653826560n, version: 6}
 
-stringifyIp({number, version});
+stringifyIp(obj);
 // => "2001:db8::"
 
-normalizeIp("2001:db8::0:0:1")
+normalizeIp("2001:db8::0:0:1");
 // => "2001:db8::1"
 
 ```
