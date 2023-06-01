@@ -32,7 +32,7 @@ There is only rudimentary validation that the passed string is actually an IP ad
 
 ### stringifyIp({number, version, [ipv4mapped], [scopeid]}, [opts])
 
-Convert a parsed object to IP adress string.
+Convert a parsed object back to an IP address string.
 
 `opts`: Options `Object`
   - `compress`: Whether to compress the IP. For IPv6, this means the "best representation" all-lowercase shortest possible form. Default: `true`.
