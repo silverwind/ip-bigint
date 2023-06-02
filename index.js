@@ -1,27 +1,22 @@
 export const max4 = 2n ** 32n - 1n;
 export const max6 = 2n ** 128n - 1n;
-const isIP = ip => ip.includes(":") ? 6 : ip.includes(".") ? 4 : 0;
 
 export function parseIp(ip) {
-  const version = isIP(ip);
+  const version = ip.includes(":") ? 6 : ip.includes(".") ? 4 : 0;
   if (!version) throw new Error(`Invalid IP address: ${ip}`);
 
-  const result = Object.create(null);
   let number = 0n;
   let exp = 0n;
+  const res = Object.create(null);
 
   if (version === 4) {
     for (const n of ip.split(".").map(BigInt).reverse()) {
       number += n * (2n ** exp);
       exp += 8n;
     }
-
-    result.number = number;
-    result.version = version;
-    return result;
   } else {
     if (ip.includes(".")) {
-      result.ipv4mapped = true;
+      res.ipv4mapped = true;
       ip = ip.split(":").map(part => {
         if (part.includes(".")) {
           const digits = part.split(".").map(str => Number(str).toString(16).padStart(2, "0"));
@@ -35,7 +30,7 @@ export function parseIp(ip) {
     if (ip.includes("%")) {
       let scopeid;
       [, ip, scopeid] = /(.+)%(.+)/.exec(ip);
-      result.scopeid = scopeid;
+      res.scopeid = scopeid;
     }
 
     const parts = ip.split(":");
@@ -51,11 +46,11 @@ export function parseIp(ip) {
       number += n * (2n ** exp);
       exp += 16n;
     }
-
-    result.number = number;
-    result.version = version;
-    return result;
   }
+
+  res.number = number;
+  res.version = version;
+  return res;
 }
 
 export function stringifyIp({number, version, ipv4mapped, scopeid} = {}, {compress = true, hexify = false} = {}) {
@@ -113,33 +108,30 @@ export function normalizeIp(ip, {compress = true, hexify = false} = {}) {
 
 // take the longest or first sequence of "0" segments and replace it with "::"
 function compressIPv6(parts) {
-  let longestSequence;
-  let currentSequence;
+  let longest, current;
   for (const [index, part] of parts.entries()) {
     if (part === "0") {
-      if (!currentSequence) {
-        currentSequence = new Set([index]);
+      if (!current) {
+        current = new Set([index]);
       } else {
-        currentSequence.add(index);
+        current.add(index);
       }
     } else {
-      if (currentSequence) {
-        if (!longestSequence) {
-          longestSequence = currentSequence;
-        } else if (currentSequence.size > longestSequence.size) {
-          longestSequence = currentSequence;
+      if (current) {
+        if (!longest) {
+          longest = current;
+        } else if (current.size > longest.size) {
+          longest = current;
         }
-        currentSequence = null;
+        current = null;
       }
     }
   }
-  if (!longestSequence && currentSequence) {
-    longestSequence = currentSequence;
-  } else if (currentSequence && currentSequence.size > longestSequence.size) {
-    longestSequence = currentSequence;
+  if ((!longest && current) || (current && current.size > longest.size)) {
+    longest = current;
   }
 
-  for (const index of longestSequence || []) {
+  for (const index of longest || []) {
     parts[index] = ":";
   }
 
