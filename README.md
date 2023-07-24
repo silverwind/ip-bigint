@@ -55,6 +55,10 @@ A `BigInt` value that holds the biggest possible IPv4 address.
 
 A `BigInt` value that holds the biggest possible IPv6 address.
 
+### ipVersion(ip)
+
+Returns a integer of the IP version, 4, 6 or 0 if it's not an IP. Very rudimentary and should not be used for validation.
+
 ## License
 
 © [silverwind](https://github.com/silverwind), distributed under BSD licence

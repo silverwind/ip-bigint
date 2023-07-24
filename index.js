@@ -2,7 +2,7 @@ export const max4 = 2n ** 32n - 1n;
 export const max6 = 2n ** 128n - 1n;
 
 export function parseIp(ip) {
-  const version = ip.includes(":") ? 6 : ip.includes(".") ? 4 : 0;
+  const version = ipVersion(ip);
   if (!version) throw new Error(`Invalid IP address: ${ip}`);
 
   let number = 0n;
@@ -136,4 +136,8 @@ function compressIPv6(parts) {
   }
 
   return parts.filter(Boolean).join(":").replace(/:{2,}/, "::");
+}
+
+export function ipVersion(ip) {
+  return ip.includes(":") ? 6 : ip.includes(".") ? 4 : 0;
 }
