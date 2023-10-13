@@ -94,11 +94,7 @@ export function stringifyIp({number, version, ipv4mapped, scopeid} = {}, {compre
       }
     }
 
-    if (scopeid) {
-      ip = `${ip}%${scopeid}`;
-    }
-
-    return ip;
+    return scopeid ? `${ip}%${scopeid}` : ip;
   }
 }
 
@@ -118,9 +114,7 @@ function compressIPv6(parts) {
       }
     } else {
       if (current) {
-        if (!longest) {
-          longest = current;
-        } else if (current.size > longest.size) {
+        if (!longest || current.size > longest.size) {
           longest = current;
         }
         current = null;
