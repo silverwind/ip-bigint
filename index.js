@@ -54,10 +54,6 @@ export function parseIp(ip) {
 }
 
 export function stringifyIp({number, version, ipv4mapped, scopeid} = {}, {compress = true, hexify = false} = {}) {
-  if (typeof number !== "bigint") throw new Error(`Expected a BigInt`);
-  if (![4, 6].includes(version)) throw new Error(`Invalid version: ${version}`);
-  if (number < 0n || number > (version === 4 ? max4 : max6)) throw new Error(`Invalid number: ${number}`);
-
   let step = version === 4 ? 24n : 112n;
   const stepReduction = version === 4 ? 8n : 16n;
   let remain = number;

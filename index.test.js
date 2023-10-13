@@ -64,7 +64,6 @@ test("parseIp and stringifyIp", () => {
   expect(() => parseIp("1")).toThrow();
   expect(() => stringifyIp()).toThrow();
   expect(() => stringifyIp({})).toThrow();
-  expect(() => stringifyIp({number: 0n})).toThrow();
   expect(jsonStringifyWithBigInt(parseIp("::"))).toEqual(`{"number":"0","version":6}`);
 });
 
