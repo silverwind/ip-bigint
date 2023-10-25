@@ -61,10 +61,10 @@ Returns a integer of the IP version, 4, 6 or 0 if it's not an IP. Very rudimenta
 
 ## Related
 
-- [is-cidr](https://github.com/silverwind/is-cidr) - Check if a string is an IP address in CIDR notation
-- [cidr-regex](https://github.com/silverwind/cidr-regex) - Check if a string is an IP address in CIDR notation
-- [is-ip](https://github.com/sindresorhus/is-ip) -  Check if a string is an IP address
 - [ip-regex](https://github.com/sindresorhus/ip-regex) - Regular expression for matching IP addresses
+- [is-cidr](https://github.com/silverwind/is-cidr) - Check if a string is an IP address in CIDR notation
+- [is-ip](https://github.com/sindresorhus/is-ip) - Check if a string is an IP address
+- [cidr-regex](https://github.com/silverwind/cidr-regex) - Check if a string is an IP address in CIDR notation
 - [cidr-tools](https://github.com/silverwind/cidr-tools) - Tools to work with IPv4 and IPv6 CIDR network lists
 
 ## License
