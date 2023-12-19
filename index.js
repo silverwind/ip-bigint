@@ -23,8 +23,8 @@ export function parseIp(ip) {
       res.ipv4mapped = true;
       ip = ip.split(":").map(part => {
         if (part.includes(".")) {
-          const digits = part.split(".").map(str => Number(str).toString(16).padStart(2, "0"));
-          return `${digits[0]}${digits[1]}:${digits[2]}${digits[3]}`;
+          const [a, b, c, d] = part.split(".").map(str => Number(str).toString(16).padStart(2, "0"));
+          return `${a}${b}:${c}${d}`;
         } else {
           return part;
         }
