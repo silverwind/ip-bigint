@@ -1,7 +1,7 @@
 # ip-bigint
 [![](https://img.shields.io/npm/v/ip-bigint.svg?style=flat)](https://www.npmjs.org/package/ip-bigint) [![](https://img.shields.io/npm/dm/ip-bigint.svg)](https://www.npmjs.org/package/ip-bigint) [![](https://img.shields.io/bundlephobia/minzip/ip-bigint.svg)](https://bundlephobia.com/package/ip-bigint) [![](https://packagephobia.com/badge?p=ip-bigint)](https://packagephobia.com/result?p=ip-bigint)
 
-> Convert IPv4 and IPv6 addresses to native BigInt and vice-versa
+> Convert IPv4 and IPv6 addresses to and from native BigInt
 
 ## Usage
 
