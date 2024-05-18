@@ -1,17 +1,31 @@
 export const max4 = 2n ** 32n - 1n;
 export const max6 = 2n ** 128n - 1n;
 
-export function ipVersion(ip) {
+type IPVersion = 4 | 6 | 0;
+
+type ParsedIP = {
+  number: bigint,
+  version: IPVersion,
+  ipv4mapped?: boolean,
+  scopeid?: string,
+}
+
+type StringifyOpts = {
+  compress?: boolean,
+  hexify?: boolean,
+}
+
+export function ipVersion(ip: string): IPVersion {
   return ip.includes(":") ? 6 : ip.includes(".") ? 4 : 0;
 }
 
-export function parseIp(ip) {
+export function parseIp(ip: string): ParsedIP {
   const version = ipVersion(ip);
   if (!version) throw new Error(`Invalid IP address: ${ip}`);
 
   let number = 0n;
   let exp = 0n;
-  const res = Object.create(null);
+  const res: Partial<ParsedIP> = Object.create(null);
 
   if (version === 4) {
     for (const n of ip.split(".").map(BigInt).reverse()) {
@@ -46,7 +60,7 @@ export function parseIp(ip) {
       }
     }
 
-    for (const n of parts.map(part => BigInt(parseInt(part || 0, 16))).reverse()) {
+    for (const n of parts.map(part => BigInt(parseInt(part || "0", 16))).reverse()) {
       number += n * (2n ** exp);
       exp += 16n;
     }
@@ -54,14 +68,14 @@ export function parseIp(ip) {
 
   res.number = number;
   res.version = version;
-  return res;
+  return res as ParsedIP;
 }
 
-export function stringifyIp({number, version, ipv4mapped, scopeid} = {}, {compress = true, hexify = false} = {}) {
+export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {compress = true, hexify = false}: StringifyOpts = {}) {
   let step = version === 4 ? 24n : 112n;
   const stepReduction = version === 4 ? 8n : 16n;
   let remain = number;
-  const parts = [];
+  const parts: bigint[] = [];
 
   while (step > 0n) {
     const divisor = 2n ** step;
@@ -98,13 +112,15 @@ export function stringifyIp({number, version, ipv4mapped, scopeid} = {}, {compre
   }
 }
 
-export function normalizeIp(ip, {compress = true, hexify = false} = {}) {
+export function normalizeIp(ip: string, {compress = true, hexify = false}: StringifyOpts = {}) {
   return stringifyIp(parseIp(ip), {compress, hexify});
 }
 
 // take the longest or first sequence of "0" segments and replace it with "::"
-function compressIPv6(parts) {
-  let longest, current;
+function compressIPv6(parts: string[]): string {
+  let longest: Set<number>;
+  let current: Set<number>;
+
   for (const [index, part] of parts.entries()) {
     if (part === "0") {
       if (!current) {
@@ -121,6 +137,7 @@ function compressIPv6(parts) {
       }
     }
   }
+
   if ((!longest && current) || (current && current.size > longest.size)) {
     longest = current;
   }

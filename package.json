@@ -6,19 +6,26 @@
   "repository": "silverwind/ip-bigint",
   "license": "BSD-2-Clause",
   "type": "module",
-  "exports": "./index.js",
   "sideEffects": false,
+  "main": "./dist/index.js",
+  "exports": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "engines": {
     "node": ">=18"
   },
-  "files": [
-    "index.js"
-  ],
   "devDependencies": {
+    "@types/node": "20.12.12",
     "eslint": "8.57.0",
-    "eslint-config-silverwind": "85.1.2",
+    "eslint-config-silverwind": "85.1.3",
+    "eslint-config-silverwind-typescript": "3.2.5",
+    "typescript-config-silverwind": "4.2.0",
     "updates": "16.1.1",
     "versions": "12.0.2",
+    "vite": "5.2.11",
+    "vite-plugin-dts": "3.9.1",
     "vitest": "1.6.0",
     "vitest-config-silverwind": "9.0.6"
   }

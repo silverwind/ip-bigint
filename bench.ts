@@ -1,4 +1,4 @@
-import {parseIp, stringifyIp} from "./index.js";
+import {parseIp, stringifyIp} from "./index.ts";
 
 let t;
 const ip4s = [];
