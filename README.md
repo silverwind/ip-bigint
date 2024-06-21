@@ -16,7 +16,6 @@ stringifyIp(obj);
 
 normalizeIp("2001:db8::0:0:1");
 // => "2001:db8::1"
-
 ```
 
 ## API
