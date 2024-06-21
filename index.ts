@@ -47,7 +47,7 @@ export function parseIp(ip: string): ParsedIP {
 
     if (ip.includes("%")) {
       let scopeid;
-      [, ip, scopeid] = /(.+)%(.+)/.exec(ip);
+      [, ip, scopeid] = (/(.+)%(.+)/.exec(ip) || []);
       res.scopeid = scopeid;
     }
 
@@ -118,8 +118,8 @@ export function normalizeIp(ip: string, {compress = true, hexify = false}: Strin
 
 // take the longest or first sequence of "0" segments and replace it with "::"
 function compressIPv6(parts: string[]): string {
-  let longest: Set<number>;
-  let current: Set<number>;
+  let longest: Set<number> | null = null;
+  let current: Set<number> | null = null;
 
   for (const [index, part] of parts.entries()) {
     if (part === "0") {
@@ -138,7 +138,7 @@ function compressIPv6(parts: string[]): string {
     }
   }
 
-  if ((!longest && current) || (current && current.size > longest.size)) {
+  if ((!longest && current) || (current && longest && current.size > longest.size)) {
     longest = current;
   }
 
