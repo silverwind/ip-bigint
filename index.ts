@@ -1,5 +1,5 @@
-export const max4 = 2n ** 32n - 1n;
-export const max6 = 2n ** 128n - 1n;
+export const max4: bigint = 2n ** 32n - 1n;
+export const max6: bigint = 2n ** 128n - 1n;
 
 type IPVersion = 4 | 6 | 0;
 
@@ -71,7 +71,7 @@ export function parseIp(ip: string): ParsedIP {
   return res as ParsedIP;
 }
 
-export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {compress = true, hexify = false}: StringifyOpts = {}) {
+export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {compress = true, hexify = false}: StringifyOpts = {}): string {
   let step = version === 4 ? 24n : 112n;
   const stepReduction = version === 4 ? 8n : 16n;
   let remain = number;
@@ -112,7 +112,7 @@ export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {c
   }
 }
 
-export function normalizeIp(ip: string, {compress = true, hexify = false}: StringifyOpts = {}) {
+export function normalizeIp(ip: string, {compress = true, hexify = false}: StringifyOpts = {}): string {
   return stringifyIp(parseIp(ip), {compress, hexify});
 }
 
