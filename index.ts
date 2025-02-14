@@ -1,16 +1,16 @@
 export const max4: bigint = 2n ** 32n - 1n;
 export const max6: bigint = 2n ** 128n - 1n;
 
-export type IPVersion = 4 | 6 | 0; // eslint-disable-line import/no-unused-modules
+export type IPVersion = 4 | 6 | 0;
 
-export type ParsedIP = { // eslint-disable-line import/no-unused-modules
+export type ParsedIP = {
   number: bigint,
   version: IPVersion,
   ipv4mapped?: boolean,
   scopeid?: string,
 }
 
-export type StringifyOpts = { // eslint-disable-line import/no-unused-modules
+export type StringifyOpts = {
   compress?: boolean,
   hexify?: boolean,
 }
