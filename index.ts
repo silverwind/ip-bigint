@@ -46,7 +46,7 @@ export function parseIp(ip: string): ParsedIP {
     }
 
     if (ip.includes("%")) {
-      let scopeid;
+      let scopeid: string;
       [, ip, scopeid] = (/(.+)%(.+)/.exec(ip) || []);
       res.scopeid = scopeid;
     }
