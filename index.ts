@@ -8,12 +8,12 @@ export type ParsedIP = {
   version: IPVersion,
   ipv4mapped?: boolean,
   scopeid?: string,
-}
+};
 
 export type StringifyOpts = {
   compress?: boolean,
   hexify?: boolean,
-}
+};
 
 export function ipVersion(ip: string): IPVersion {
   return ip.includes(":") ? 6 : ip.includes(".") ? 4 : 0;
