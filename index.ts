@@ -75,7 +75,7 @@ export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {c
   let step = version === 4 ? 24n : 112n;
   const stepReduction = version === 4 ? 8n : 16n;
   let remain = number;
-  const parts: bigint[] = [];
+  const parts: Array<bigint> = [];
 
   while (step > 0n) {
     const divisor = 2n ** step;
@@ -117,7 +117,7 @@ export function normalizeIp(ip: string, {compress = true, hexify = false}: Strin
 }
 
 // take the longest or first sequence of "0" segments and replace it with "::"
-function compressIPv6(parts: string[]): string {
+function compressIPv6(parts: Array<string>): string {
   let longest: Set<number> | null = null;
   let current: Set<number> | null = null;
 
