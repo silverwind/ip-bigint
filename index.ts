@@ -117,6 +117,7 @@ export function normalizeIp(ip: string, {compress = true, hexify = false}: Strin
 }
 
 // take the longest or first sequence of "0" segments and replace it with "::"
+// Per RFC 5952 section 4.2.2, only compress sequences of 2 or more consecutive zeros
 function compressIPv6(parts: Array<string>): string {
   let longest: Set<number> | null = null;
   let current: Set<number> | null = null;
@@ -142,8 +143,11 @@ function compressIPv6(parts: Array<string>): string {
     longest = current;
   }
 
-  for (const index of longest || []) {
-    parts[index] = ":";
+  // Only compress if we have 2 or more consecutive zeros (RFC 5952 section 4.2.2)
+  if (longest && longest.size >= 2) {
+    for (const index of longest) {
+      parts[index] = ":";
+    }
   }
 
   return parts.filter(Boolean).join(":").replace(/:{2,}/, "::");
