@@ -36,7 +36,7 @@ test("parseIp and stringifyIp", () => {
   expect(normalizeIp("::ffff:127.0.0.1")).toEqual("::ffff:127.0.0.1");
   expect(normalizeIp("::%en1")).toEqual("::%en1");
   expect(normalizeIp("2001:0000:0000:0db8:0000:0000:0000:0001")).toEqual("2001:0:0:db8::1");
-  expect(normalizeIp("1:2:0:4:5:6:7:8")).toEqual("1:2::4:5:6:7:8");
+  expect(normalizeIp("1:2:0:4:5:6:7:8")).toEqual("1:2:0:4:5:6:7:8");
   expect(normalizeIp("0:0:0:4:5:6:7:8")).toEqual("::4:5:6:7:8");
   expect(normalizeIp("1:2:3:00:00::0")).toEqual("1:2:3::");
   expect(normalizeIp("1:0:0:0:0:0:0:1")).toEqual("1::1");
@@ -63,6 +63,21 @@ test("parseIp and stringifyIp", () => {
 
   const {number, version} = parseIp("255.255.255.255");
   expect(stringifyIp({number, version})).toEqual("255.255.255.255");
+});
+
+test("RFC 5952 section 4.2.2 compliance - single zero not compressed", () => {
+  // Per RFC 5952 section 4.2.2: "The symbol '::' MUST NOT be used to shorten just one 16-bit 0 field"
+  // Examples from the RFC
+  expect(normalizeIp("2001:db8:0:1:1:1:1:1")).toEqual("2001:db8:0:1:1:1:1:1");
+
+  // Additional cases: single zeros should NOT be compressed
+  expect(normalizeIp("1:2:0:4:5:6:7:8")).toEqual("1:2:0:4:5:6:7:8");
+  expect(normalizeIp("1:0:3:4:5:6:7:8")).toEqual("1:0:3:4:5:6:7:8");
+
+  // Two or more consecutive zeros SHOULD be compressed
+  expect(normalizeIp("1:2:0:0:5:6:7:8")).toEqual("1:2::5:6:7:8");
+  expect(normalizeIp("1:2:0:0:0:6:7:8")).toEqual("1:2::6:7:8");
+  expect(normalizeIp("1:0:0:0:0:0:0:8")).toEqual("1::8");
 });
 
 test("ipVersion", () => {
