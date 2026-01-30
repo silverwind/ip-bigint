@@ -117,7 +117,6 @@ export function normalizeIp(ip: string, {compress = true, hexify = false}: Strin
 }
 
 // take the longest or first sequence of "0" segments and replace it with "::"
-// Per RFC 5952 section 4.2.2, only compress sequences of 2 or more consecutive zeros
 function compressIPv6(parts: Array<string>): string {
   let longest: Set<number> | null = null;
   let current: Set<number> | null = null;
