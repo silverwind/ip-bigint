@@ -4,11 +4,13 @@ function jsonStringifyBigInt(obj: any) {
   return JSON.stringify(obj, (_, value) => typeof value === "bigint" ? value.toString() : value);
 }
 
-test("parseIp and stringifyIp", () => {
+test("tests", () => {
   expect(parseIp("0.0.0.0")).toEqual({number: 0n, version: 4});
   expect(parseIp("255.255.255.255")).toEqual({number: max4, version: 4});
   expect(parseIp("::")).toEqual({number: 0n, version: 6});
   expect(parseIp("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")).toEqual({number: max6, version: 6});
+  expect(() => parseIp("")).toThrow();
+  expect(() => parseIp("1")).toThrow();
 
   expect(normalizeIp("0.0.0.0")).toEqual("0.0.0.0");
   expect(normalizeIp("0.0.0.255")).toEqual("0.0.0.255");
@@ -56,31 +58,18 @@ test("parseIp and stringifyIp", () => {
   expect(normalizeIp("1::1", {compress: false})).toEqual("1:0:0:0:0:0:0:1");
   expect(normalizeIp("01.02.03.04")).toEqual("1.2.3.4");
   expect(normalizeIp("::FFFF:34.90.242.162", {hexify: true})).toEqual("::ffff:225a:f2a2");
+  expect(normalizeIp("2001:db8:0:1:1:1:1:1")).toEqual("2001:db8:0:1:1:1:1:1");
+  expect(normalizeIp("1:2:0:4:5:6:7:8")).toEqual("1:2:0:4:5:6:7:8");
+  expect(normalizeIp("1:0:3:4:5:6:7:8")).toEqual("1:0:3:4:5:6:7:8");
+  expect(normalizeIp("1:2:0:0:5:6:7:8")).toEqual("1:2::5:6:7:8");
+  expect(normalizeIp("1:2:0:0:0:6:7:8")).toEqual("1:2::6:7:8");
+  expect(normalizeIp("1:0:0:0:0:0:0:8")).toEqual("1::8");
 
-  expect(() => parseIp("")).toThrow();
-  expect(() => parseIp("1")).toThrow();
   expect(jsonStringifyBigInt(parseIp("::"))).toEqual(`{"number":"0","version":6}`);
 
   const {number, version} = parseIp("255.255.255.255");
   expect(stringifyIp({number, version})).toEqual("255.255.255.255");
-});
 
-test("RFC 5952 section 4.2.2 compliance - single zero not compressed", () => {
-  // Per RFC 5952 section 4.2.2: "The symbol '::' MUST NOT be used to shorten just one 16-bit 0 field"
-  // Examples from the RFC
-  expect(normalizeIp("2001:db8:0:1:1:1:1:1")).toEqual("2001:db8:0:1:1:1:1:1");
-
-  // Additional cases: single zeros should NOT be compressed
-  expect(normalizeIp("1:2:0:4:5:6:7:8")).toEqual("1:2:0:4:5:6:7:8");
-  expect(normalizeIp("1:0:3:4:5:6:7:8")).toEqual("1:0:3:4:5:6:7:8");
-
-  // Two or more consecutive zeros SHOULD be compressed
-  expect(normalizeIp("1:2:0:0:5:6:7:8")).toEqual("1:2::5:6:7:8");
-  expect(normalizeIp("1:2:0:0:0:6:7:8")).toEqual("1:2::6:7:8");
-  expect(normalizeIp("1:0:0:0:0:0:0:8")).toEqual("1::8");
-});
-
-test("ipVersion", () => {
   expect(ipVersion("1.2.3.4")).toEqual(4);
   expect(ipVersion("::1.2.3.4")).toEqual(6);
   expect(ipVersion("::")).toEqual(6);
