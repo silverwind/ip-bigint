@@ -24,13 +24,12 @@ export function parseIp(ip: string): ParsedIP {
   if (!version) throw new Error(`Invalid IP address: ${ip}`);
 
   let number = 0n;
-  let exp = 0n;
-  const res: Partial<ParsedIP> = Object.create(null);
+  const res: Partial<ParsedIP> = {};
 
   if (version === 4) {
-    for (const n of ip.split(".").map(BigInt).reverse()) {
-      number += n * (2n ** exp);
-      exp += 8n;
+    const parts = ip.split(".");
+    for (let i = 0; i < 4; i++) {
+      number = (number << 8n) | BigInt(parts[i]);
     }
   } else {
     if (ip.includes(".")) {
@@ -60,9 +59,8 @@ export function parseIp(ip: string): ParsedIP {
       }
     }
 
-    for (const n of parts.map(part => BigInt(parseInt(part || "0", 16))).reverse()) {
-      number += n * (2n ** exp);
-      exp += 16n;
+    for (const part of parts) {
+      number = (number << 16n) | BigInt(parseInt(part || "0", 16));
     }
   }
 
@@ -72,22 +70,16 @@ export function parseIp(ip: string): ParsedIP {
 }
 
 export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {compress = true, hexify = false}: StringifyOpts = {}): string {
-  let step = version === 4 ? 24n : 112n;
-  const stepReduction = version === 4 ? 8n : 16n;
-  let remain = number;
-  const parts: Array<bigint> = [];
-
-  while (step > 0n) {
-    const divisor = 2n ** step;
-    parts.push(remain / divisor);
-    remain = number % divisor;
-    step -= stepReduction;
-  }
-  parts.push(remain);
-
   if (version === 4) {
-    return parts.join(".");
+    const num = Number(number);
+    return `${(num >>> 24) & 0xff}.${(num >>> 16) & 0xff}.${(num >>> 8) & 0xff}.${num & 0xff}`;
   } else {
+    const parts: bigint[] = new Array(8);
+    let n = number;
+    for (let i = 7; i >= 0; i--) {
+      parts[i] = n & 0xffffn;
+      n >>= 16n;
+    }
     let ip = "";
     if (ipv4mapped && !hexify) {
       for (const [index, num] of parts.entries()) {
@@ -118,36 +110,42 @@ export function normalizeIp(ip: string, {compress = true, hexify = false}: Strin
 
 // take the longest or first sequence of "0" segments and replace it with "::"
 function compressIPv6(parts: Array<string>): string {
-  let longest: Set<number> | null = null;
-  let current: Set<number> | null = null;
+  let longestStart = -1;
+  let longestLen = 0;
+  let currentStart = -1;
+  let currentLen = 0;
 
-  for (const [index, part] of parts.entries()) {
-    if (part === "0") {
-      if (!current) {
-        current = new Set([index]);
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i] === "0") {
+      if (currentStart === -1) {
+        currentStart = i;
+        currentLen = 1;
       } else {
-        current.add(index);
+        currentLen++;
       }
     } else {
-      if (current) {
-        if (!longest || current.size > longest.size) {
-          longest = current;
-        }
-        current = null;
+      if (currentLen > longestLen) {
+        longestStart = currentStart;
+        longestLen = currentLen;
       }
+      currentStart = -1;
+      currentLen = 0;
     }
   }
-
-  if ((!longest && current) || (current && longest && current.size > longest.size)) {
-    longest = current;
+  if (currentLen > longestLen) {
+    longestStart = currentStart;
+    longestLen = currentLen;
   }
 
   // Only compress if we have 2 or more consecutive zeros (RFC 5952 section 4.2.2)
-  if (longest && longest.size >= 2) {
-    for (const index of longest) {
-      parts[index] = ":";
-    }
+  if (longestLen >= 2) {
+    const before = parts.slice(0, longestStart).join(":");
+    const after = parts.slice(longestStart + longestLen).join(":");
+    if (before && after) return `${before}::${after}`;
+    if (before) return `${before}::`;
+    if (after) return `::${after}`;
+    return "::";
   }
 
-  return parts.filter(Boolean).join(":").replace(/:{2,}/, "::");
+  return parts.join(":");
 }
