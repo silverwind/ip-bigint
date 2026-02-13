@@ -23,14 +23,21 @@ export function parseIp(ip: string): ParsedIP {
   const version = ipVersion(ip);
   if (!version) throw new Error(`Invalid IP address: ${ip}`);
 
-  let number = 0n;
   const res: Partial<ParsedIP> = {};
 
   if (version === 4) {
-    const parts = ip.split(".");
-    for (let i = 0; i < 4; i++) {
-      number = (number << 8n) | BigInt(parts[i]);
+    let num = 0;
+    let octet = 0;
+    for (let i = 0; i < ip.length; i++) {
+      const c = ip.charCodeAt(i);
+      if (c === 46) { // '.'
+        num = num * 256 + octet;
+        octet = 0;
+      } else {
+        octet = octet * 10 + c - 48;
+      }
     }
+    res.number = BigInt(num * 256 + octet);
   } else {
     if (ip.includes(".")) {
       res.ipv4mapped = true;
@@ -45,26 +52,29 @@ export function parseIp(ip: string): ParsedIP {
     }
 
     if (ip.includes("%")) {
-      let scopeid: string;
-      [, ip, scopeid] = (/(.+)%(.+)/.exec(ip) || []);
-      res.scopeid = scopeid;
+      const pctIdx = ip.indexOf("%");
+      res.scopeid = ip.slice(pctIdx + 1);
+      ip = ip.slice(0, pctIdx);
     }
 
     const parts = ip.split(":");
     const index = parts.indexOf("");
 
+    let hex = "";
     if (index !== -1) {
-      while (parts.length < 8) {
-        parts.splice(index, 0, "");
-      }
+      let emptyEnd = index;
+      while (emptyEnd < parts.length && parts[emptyEnd] === "") emptyEnd++;
+      const missing = 8 - (parts.length - (emptyEnd - index));
+      for (let i = 0; i < index; i++) hex += `0000${parts[i]}`.slice(-4);
+      for (let i = 0; i < missing; i++) hex += "0000";
+      for (let i = emptyEnd; i < parts.length; i++) hex += `0000${parts[i]}`.slice(-4);
+    } else {
+      for (const part of parts) hex += `0000${part}`.slice(-4);
     }
 
-    for (const part of parts) {
-      number = (number << 16n) | BigInt(parseInt(part || "0", 16));
-    }
+    res.number = BigInt(`0x${hex}`);
   }
 
-  res.number = number;
   res.version = version;
   return res as ParsedIP;
 }
@@ -74,29 +84,41 @@ export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {c
     const num = Number(number);
     return `${(num >>> 24) & 0xff}.${(num >>> 16) & 0xff}.${(num >>> 8) & 0xff}.${num & 0xff}`;
   } else {
-    const parts: bigint[] = new Array(8);
-    let n = number;
-    for (let i = 7; i >= 0; i--) {
-      parts[i] = n & 0xffffn;
-      n >>= 16n;
-    }
+    const hex = number.toString(16).padStart(32, "0");
     let ip = "";
+
     if (ipv4mapped && !hexify) {
-      for (const [index, num] of parts.entries()) {
-        if (index < 6) {
-          ip += `${num.toString(16)}:`;
-        } else {
-          ip += `${String(num >> 8n)}.${String(num & 255n)}${index === 6 ? "." : ""}`;
-        }
+      const parts: string[] = new Array(7);
+      for (let i = 0; i < 6; i++) {
+        const offset = i * 4;
+        let start = offset;
+        while (start < offset + 3 && hex.charCodeAt(start) === 48) start++;
+        parts[i] = hex.substring(start, offset + 4);
       }
+      const o1 = parseInt(hex.substring(24, 26), 16);
+      const o2 = parseInt(hex.substring(26, 28), 16);
+      const o3 = parseInt(hex.substring(28, 30), 16);
+      const o4 = parseInt(hex.substring(30, 32), 16);
+      parts[6] = `${o1}.${o2}.${o3}.${o4}`;
+
       if (compress) {
-        ip = compressIPv6(ip.split(":"));
+        ip = compressIPv6(parts);
+      } else {
+        ip = parts.join(":");
       }
     } else {
+      const parts: string[] = new Array(8);
+      for (let i = 0; i < 8; i++) {
+        const offset = i * 4;
+        let start = offset;
+        while (start < offset + 3 && hex.charCodeAt(start) === 48) start++;
+        parts[i] = hex.substring(start, offset + 4);
+      }
+
       if (compress) {
-        ip = compressIPv6(parts.map(n => n.toString(16)));
+        ip = compressIPv6(parts);
       } else {
-        ip = parts.map(n => n.toString(16)).join(":");
+        ip = parts.join(":");
       }
     }
 
@@ -139,12 +161,19 @@ function compressIPv6(parts: Array<string>): string {
 
   // Only compress if we have 2 or more consecutive zeros (RFC 5952 section 4.2.2)
   if (longestLen >= 2) {
-    const before = parts.slice(0, longestStart).join(":");
-    const after = parts.slice(longestStart + longestLen).join(":");
-    if (before && after) return `${before}::${after}`;
-    if (before) return `${before}::`;
-    if (after) return `::${after}`;
-    return "::";
+    let result = "";
+    for (let i = 0; i < longestStart; i++) {
+      if (i > 0) result += ":";
+      result += parts[i];
+    }
+    result += "::";
+    let first = true;
+    for (let i = longestStart + longestLen; i < parts.length; i++) {
+      if (!first) result += ":";
+      first = false;
+      result += parts[i];
+    }
+    return result;
   }
 
   return parts.join(":");
