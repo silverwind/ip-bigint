@@ -60,19 +60,28 @@ export function parseIp(ip: string): ParsedIP {
     const parts = ip.split(":");
     const index = parts.indexOf("");
 
-    let hex = "";
+    let num = 0n;
     if (index !== -1) {
       let emptyEnd = index;
       while (emptyEnd < parts.length && parts[emptyEnd] === "") emptyEnd++;
       const missing = 8 - (parts.length - (emptyEnd - index));
-      for (let i = 0; i < index; i++) hex += `0000${parts[i]}`.slice(-4);
-      for (let i = 0; i < missing; i++) hex += "0000";
-      for (let i = emptyEnd; i < parts.length; i++) hex += `0000${parts[i]}`.slice(-4);
+      for (let i = 0; i < index; i++) {
+        num = (num << 16n) | BigInt(parseInt(parts[i], 16));
+      }
+      const rightCount = parts.length - emptyEnd;
+      num <<= BigInt((missing + rightCount) * 16);
+      let rightShift = BigInt((rightCount - 1) * 16);
+      for (let i = emptyEnd; i < parts.length; i++) {
+        num |= BigInt(parseInt(parts[i], 16)) << rightShift;
+        rightShift -= 16n;
+      }
     } else {
-      for (const part of parts) hex += `0000${part}`.slice(-4);
+      for (const part of parts) {
+        num = (num << 16n) | BigInt(parseInt(part, 16));
+      }
     }
 
-    res.number = BigInt(`0x${hex}`);
+    res.number = num;
   }
 
   res.version = version;
@@ -84,42 +93,31 @@ export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {c
     const num = Number(number);
     return `${(num >>> 24) & 0xff}.${(num >>> 16) & 0xff}.${(num >>> 8) & 0xff}.${num & 0xff}`;
   } else {
-    const hex = number.toString(16).padStart(32, "0");
     let ip = "";
 
     if (ipv4mapped && !hexify) {
       const parts: string[] = new Array(7);
-      for (let i = 0; i < 6; i++) {
-        const offset = i * 4;
-        let start = offset;
-        while (start < offset + 3 && hex.charCodeAt(start) === 48) start++;
-        parts[i] = hex.substring(start, offset + 4);
+      let n = number;
+      const ipv4Word = Number(n & 0xffffffffn);
+      n >>= 32n;
+      parts[6] = `${(ipv4Word >>> 24) & 0xff}.${(ipv4Word >>> 16) & 0xff}.${(ipv4Word >>> 8) & 0xff}.${ipv4Word & 0xff}`;
+      for (let i = 2; i >= 0; i--) {
+        const pair = Number(n & 0xffffffffn);
+        parts[i * 2 + 1] = (pair & 0xffff).toString(16);
+        parts[i * 2] = (pair >>> 16).toString(16);
+        n >>= 32n;
       }
-      const o1 = parseInt(hex.substring(24, 26), 16);
-      const o2 = parseInt(hex.substring(26, 28), 16);
-      const o3 = parseInt(hex.substring(28, 30), 16);
-      const o4 = parseInt(hex.substring(30, 32), 16);
-      parts[6] = `${o1}.${o2}.${o3}.${o4}`;
-
-      if (compress) {
-        ip = compressIPv6(parts);
-      } else {
-        ip = parts.join(":");
-      }
+      ip = compress ? compressIPv6(parts) : parts.join(":");
     } else {
       const parts: string[] = new Array(8);
-      for (let i = 0; i < 8; i++) {
-        const offset = i * 4;
-        let start = offset;
-        while (start < offset + 3 && hex.charCodeAt(start) === 48) start++;
-        parts[i] = hex.substring(start, offset + 4);
+      let n = number;
+      for (let i = 3; i >= 0; i--) {
+        const pair = Number(n & 0xffffffffn);
+        parts[i * 2 + 1] = (pair & 0xffff).toString(16);
+        parts[i * 2] = (pair >>> 16).toString(16);
+        n >>= 32n;
       }
-
-      if (compress) {
-        ip = compressIPv6(parts);
-      } else {
-        ip = parts.join(":");
-      }
+      ip = compress ? compressIPv6(parts) : parts.join(":");
     }
 
     return scopeid ? `${ip}%${scopeid}` : ip;
