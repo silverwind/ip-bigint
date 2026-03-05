@@ -135,6 +135,36 @@ export function parseIp(ip: string): ParsedIP {
   return res;
 }
 
+// Extract 8 IPv6 groups as uint16 numbers from a BigInt via hex string conversion.
+// Replaces 8 BigInt operations (4 masks + 4 shifts) with a single BigInt.toString(16) call.
+function extractGroups(number: bigint, groups: number[]): void {
+  const hex = number.toString(16);
+  const hLen = hex.length;
+  for (let i = 7; i >= 0; i--) {
+    const gEnd = hLen - (7 - i) * 4;
+    const gStart = gEnd - 4;
+    if (gEnd <= 0) {
+      groups[i] = 0;
+    } else if (gStart >= 0) {
+      const c0 = hex.charCodeAt(gStart);
+      const c1 = hex.charCodeAt(gStart + 1);
+      const c2 = hex.charCodeAt(gStart + 2);
+      const c3 = hex.charCodeAt(gStart + 3);
+      groups[i] = ((c0 <= 57 ? c0 - 48 : c0 - 87) << 12) |
+                  ((c1 <= 57 ? c1 - 48 : c1 - 87) << 8) |
+                  ((c2 <= 57 ? c2 - 48 : c2 - 87) << 4) |
+                   (c3 <= 57 ? c3 - 48 : c3 - 87);
+    } else {
+      let val = 0;
+      for (let j = 0; j < gEnd; j++) {
+        const c = hex.charCodeAt(j);
+        val = (val << 4) | (c <= 57 ? c - 48 : c - 87);
+      }
+      groups[i] = val;
+    }
+  }
+}
+
 export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {compress = true, hexify = false}: StringifyOpts = {}): string {
   if (version === 4) {
     const num = Number(number);
@@ -143,28 +173,15 @@ export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {c
     let ip = "";
 
     if (ipv4mapped && !hexify) {
-      const parts: string[] = new Array(7);
-      let n = number;
-      const ipv4Word = Number(n & 0xffffffffn);
-      n >>= 32n;
-      parts[6] = `${(ipv4Word >>> 24) & 0xff}.${(ipv4Word >>> 16) & 0xff}.${(ipv4Word >>> 8) & 0xff}.${ipv4Word & 0xff}`;
-      for (let i = 2; i >= 0; i--) {
-        const pair = Number(n & 0xffffffffn);
-        parts[i * 2 + 1] = (pair & 0xffff).toString(16);
-        parts[i * 2] = (pair >>> 16).toString(16);
-        n >>= 32n;
-      }
-      ip = compress ? compressIPv6(parts) : parts.join(":");
+      const groups = new Array(8);
+      extractGroups(number, groups);
+      const ipv4Num = (groups[6] << 16) | groups[7];
+      const ipv4Str = `${(ipv4Num >>> 24) & 0xff}.${(ipv4Num >>> 16) & 0xff}.${(ipv4Num >>> 8) & 0xff}.${ipv4Num & 0xff}`;
+      ip = compress ? compressIPv6(groups, 6, ipv4Str) : joinHexGroups(groups, 6, ipv4Str);
     } else {
-      const parts: string[] = new Array(8);
-      let n = number;
-      for (let i = 3; i >= 0; i--) {
-        const pair = Number(n & 0xffffffffn);
-        parts[i * 2 + 1] = (pair & 0xffff).toString(16);
-        parts[i * 2] = (pair >>> 16).toString(16);
-        n >>= 32n;
-      }
-      ip = compress ? compressIPv6(parts) : parts.join(":");
+      const groups = new Array(8);
+      extractGroups(number, groups);
+      ip = compress ? compressIPv6(groups, 8) : joinHexGroups(groups, 8);
     }
 
     return scopeid ? `${ip}%${scopeid}` : ip;
@@ -175,15 +192,24 @@ export function normalizeIp(ip: string, {compress = true, hexify = false}: Strin
   return stringifyIp(parseIp(ip), {compress, hexify});
 }
 
-// take the longest or first sequence of "0" segments and replace it with "::"
-function compressIPv6(parts: Array<string>): string {
+function joinHexGroups(groups: number[], count: number, suffix?: string): string {
+  let result = groups[0].toString(16);
+  for (let i = 1; i < count; i++) {
+    result += `:${groups[i].toString(16)}`;
+  }
+  if (suffix !== undefined) result += `:${suffix}`;
+  return result;
+}
+
+// take the longest or first sequence of 0 groups and replace it with "::"
+function compressIPv6(groups: number[], count: number, suffix?: string): string {
   let longestStart = -1;
   let longestLen = 0;
   let currentStart = -1;
   let currentLen = 0;
 
-  for (let i = 0; i < parts.length; i++) {
-    if (parts[i] === "0") {
+  for (let i = 0; i < count; i++) {
+    if (groups[i] === 0) {
       if (currentStart === -1) {
         currentStart = i;
         currentLen = 1;
@@ -209,17 +235,21 @@ function compressIPv6(parts: Array<string>): string {
     let result = "";
     for (let i = 0; i < longestStart; i++) {
       if (i > 0) result += ":";
-      result += parts[i];
+      result += groups[i].toString(16);
     }
     result += "::";
     let first = true;
-    for (let i = longestStart + longestLen; i < parts.length; i++) {
+    for (let i = longestStart + longestLen; i < count; i++) {
       if (!first) result += ":";
       first = false;
-      result += parts[i];
+      result += groups[i].toString(16);
+    }
+    if (suffix !== undefined) {
+      if (!first) result += ":";
+      result += suffix;
     }
     return result;
   }
 
-  return parts.join(":");
+  return joinHexGroups(groups, count, suffix);
 }
