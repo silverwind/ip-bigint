@@ -23,8 +23,6 @@ export function parseIp(ip: string): ParsedIP {
   const version = ipVersion(ip);
   if (!version) throw new Error(`Invalid IP address: ${ip}`);
 
-  const res: Partial<ParsedIP> = {};
-
   if (version === 4) {
     let num = 0;
     let octet = 0;
@@ -37,55 +35,104 @@ export function parseIp(ip: string): ParsedIP {
         octet = octet * 10 + c - 48;
       }
     }
-    res.number = BigInt(num * 256 + octet);
-  } else {
-    if (ip.includes(".")) {
-      res.ipv4mapped = true;
-      ip = ip.split(":").map(part => {
-        if (part.includes(".")) {
-          const [a, b, c, d] = part.split(".").map(str => Number(str).toString(16).padStart(2, "0"));
-          return `${a}${b}:${c}${d}`;
-        } else {
-          return part;
-        }
-      }).join(":");
-    }
-
-    if (ip.includes("%")) {
-      const pctIdx = ip.indexOf("%");
-      res.scopeid = ip.slice(pctIdx + 1);
-      ip = ip.slice(0, pctIdx);
-    }
-
-    const parts = ip.split(":");
-    const index = parts.indexOf("");
-
-    let num = 0n;
-    if (index !== -1) {
-      let emptyEnd = index;
-      while (emptyEnd < parts.length && parts[emptyEnd] === "") emptyEnd++;
-      const missing = 8 - (parts.length - (emptyEnd - index));
-      for (let i = 0; i < index; i++) {
-        num = (num << 16n) | BigInt(parseInt(parts[i], 16));
-      }
-      const rightCount = parts.length - emptyEnd;
-      num <<= BigInt((missing + rightCount) * 16);
-      let rightShift = BigInt((rightCount - 1) * 16);
-      for (let i = emptyEnd; i < parts.length; i++) {
-        num |= BigInt(parseInt(parts[i], 16)) << rightShift;
-        rightShift -= 16n;
-      }
-    } else {
-      for (const part of parts) {
-        num = (num << 16n) | BigInt(parseInt(part, 16));
-      }
-    }
-
-    res.number = num;
+    return {number: BigInt(num * 256 + octet), version: 4};
   }
 
-  res.version = version;
-  return res as ParsedIP;
+  // IPv6: single-pass char-by-char parsing
+  let ipv4mapped: boolean | undefined;
+  let scopeid: string | undefined;
+  let end = ip.length;
+
+  const pctIdx = ip.indexOf("%");
+  if (pctIdx !== -1) {
+    scopeid = ip.slice(pctIdx + 1);
+    end = pctIdx;
+  }
+
+  let leftNum = 0n;
+  let leftCount = 0;
+  let rightNum = 0n;
+  let hasDoubleColon = false;
+  let currentHex = 0;
+  let currentDec = 0;
+  let hasValue = false;
+  let inDottedPart = false;
+  let dottedVal = 0;
+
+  for (let i = 0; i < end; i++) {
+    const c = ip.charCodeAt(i);
+
+    if (c === 58) { // ':'
+      if (hasValue) {
+        if (hasDoubleColon) {
+          rightNum = (rightNum << 16n) | BigInt(currentHex);
+        } else {
+          leftNum = (leftNum << 16n) | BigInt(currentHex);
+          leftCount++;
+        }
+        currentHex = 0;
+        currentDec = 0;
+        hasValue = false;
+      }
+      if (i + 1 < end && ip.charCodeAt(i + 1) === 58) {
+        hasDoubleColon = true;
+        i++;
+      }
+    } else if (c === 46) { // '.'
+      if (!inDottedPart) {
+        inDottedPart = true;
+        ipv4mapped = true;
+        dottedVal = currentDec;
+      } else {
+        dottedVal = dottedVal * 256 + currentDec;
+      }
+      currentHex = 0;
+      currentDec = 0;
+      hasValue = false;
+    } else {
+      if (inDottedPart) {
+        currentDec = currentDec * 10 + c - 48;
+      } else {
+        if (c <= 57) { // 0-9
+          currentHex = (currentHex << 4) | (c - 48);
+          currentDec = currentDec * 10 + c - 48;
+        } else if (c >= 97) { // a-f
+          currentHex = (currentHex << 4) | (c - 87);
+        } else { // A-F
+          currentHex = (currentHex << 4) | (c - 55);
+        }
+      }
+      hasValue = true;
+    }
+  }
+
+  // Handle last value
+  if (inDottedPart) {
+    dottedVal = dottedVal * 256 + currentDec;
+    if (hasDoubleColon) {
+      rightNum = (rightNum << 32n) | BigInt(dottedVal);
+    } else {
+      leftNum = (leftNum << 32n) | BigInt(dottedVal);
+      leftCount += 2;
+    }
+  } else if (hasValue) {
+    if (hasDoubleColon) {
+      rightNum = (rightNum << 16n) | BigInt(currentHex);
+    } else {
+      leftNum = (leftNum << 16n) | BigInt(currentHex);
+      leftCount++;
+    }
+  }
+
+  // Build 128-bit number
+  const number = hasDoubleColon ?
+    (leftNum << BigInt((8 - leftCount) * 16)) | rightNum :
+    leftNum;
+
+  const res: ParsedIP = {number, version: 6};
+  if (ipv4mapped) res.ipv4mapped = ipv4mapped;
+  if (scopeid) res.scopeid = scopeid;
+  return res;
 }
 
 export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {compress = true, hexify = false}: StringifyOpts = {}): string {
