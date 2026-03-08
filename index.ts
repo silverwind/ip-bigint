@@ -19,6 +19,10 @@ export function ipVersion(ip: string): IPVersion {
   return ip.includes(":") ? 6 : ip.includes(".") ? 4 : 0;
 }
 
+// Reusable buffers for IPv6 group collection (avoids allocation per call)
+const leftGroups = [0, 0, 0, 0, 0, 0, 0, 0];
+const rightGroups = [0, 0, 0, 0, 0, 0, 0, 0];
+
 export function parseIp(ip: string): ParsedIP {
   const version = ipVersion(ip);
   if (!version) throw new Error(`Invalid IP address: ${ip}`);
@@ -38,7 +42,7 @@ export function parseIp(ip: string): ParsedIP {
     return {number: BigInt(num * 256 + octet), version: 4};
   }
 
-  // IPv6: single-pass char-by-char parsing
+  // IPv6: single-pass char-by-char parsing, collecting uint16 groups
   let ipv4mapped: boolean | undefined;
   let scopeid: string | undefined;
   let end = ip.length;
@@ -49,9 +53,8 @@ export function parseIp(ip: string): ParsedIP {
     end = pctIdx;
   }
 
-  let leftNum = 0n;
   let leftCount = 0;
-  let rightNum = 0n;
+  let rightCount = 0;
   let hasDoubleColon = false;
   let currentHex = 0;
   let currentDec = 0;
@@ -65,10 +68,9 @@ export function parseIp(ip: string): ParsedIP {
     if (c === 58) { // ':'
       if (hasValue) {
         if (hasDoubleColon) {
-          rightNum = (rightNum << 16n) | BigInt(currentHex);
+          rightGroups[rightCount++] = currentHex;
         } else {
-          leftNum = (leftNum << 16n) | BigInt(currentHex);
-          leftCount++;
+          leftGroups[leftCount++] = currentHex;
         }
         currentHex = 0;
         currentDec = 0;
@@ -110,24 +112,46 @@ export function parseIp(ip: string): ParsedIP {
   if (inDottedPart) {
     dottedVal = dottedVal * 256 + currentDec;
     if (hasDoubleColon) {
-      rightNum = (rightNum << 32n) | BigInt(dottedVal);
+      rightGroups[rightCount++] = (dottedVal >>> 16) & 0xffff;
+      rightGroups[rightCount++] = dottedVal & 0xffff;
     } else {
-      leftNum = (leftNum << 32n) | BigInt(dottedVal);
-      leftCount += 2;
+      leftGroups[leftCount++] = (dottedVal >>> 16) & 0xffff;
+      leftGroups[leftCount++] = dottedVal & 0xffff;
     }
   } else if (hasValue) {
     if (hasDoubleColon) {
-      rightNum = (rightNum << 16n) | BigInt(currentHex);
+      rightGroups[rightCount++] = currentHex;
     } else {
-      leftNum = (leftNum << 16n) | BigInt(currentHex);
-      leftCount++;
+      leftGroups[leftCount++] = currentHex;
     }
   }
 
-  // Build 128-bit number
-  const number = hasDoubleColon ?
-    (leftNum << BigInt((8 - leftCount) * 16)) | rightNum :
-    leftNum;
+  // Build 128-bit BigInt, minimizing BigInt operations
+  let number: bigint;
+  if (!hasDoubleColon) {
+    // Full address: all 8 groups in leftGroups, use 4x 32-bit construction
+    number = (BigInt(((leftGroups[0] << 16) | leftGroups[1]) >>> 0) << 96n) |
+             (BigInt(((leftGroups[2] << 16) | leftGroups[3]) >>> 0) << 64n) |
+             (BigInt(((leftGroups[4] << 16) | leftGroups[5]) >>> 0) << 32n) |
+              BigInt(((leftGroups[6] << 16) | leftGroups[7]) >>> 0);
+  } else {
+    // Has ::, build left and right parts separately
+    let leftNum = 0n;
+    if (leftCount > 0) {
+      leftNum = BigInt(leftGroups[0]);
+      for (let i = 1; i < leftCount; i++) {
+        leftNum = (leftNum << 16n) | BigInt(leftGroups[i]);
+      }
+    }
+    let rightNum = 0n;
+    if (rightCount > 0) {
+      rightNum = BigInt(rightGroups[0]);
+      for (let i = 1; i < rightCount; i++) {
+        rightNum = (rightNum << 16n) | BigInt(rightGroups[i]);
+      }
+    }
+    number = leftCount > 0 ? (leftNum << BigInt((8 - leftCount) * 16)) | rightNum : rightNum;
+  }
 
   const res: ParsedIP = {number, version: 6};
   if (ipv4mapped) res.ipv4mapped = ipv4mapped;
@@ -192,10 +216,20 @@ export function normalizeIp(ip: string, {compress = true, hexify = false}: Strin
   return stringifyIp(parseIp(ip), {compress, hexify});
 }
 
+const hexChars = "0123456789abcdef";
+
+function uint16Hex(v: number): string {
+  if (v === 0) return "0";
+  if (v < 16) return hexChars[v];
+  if (v < 256) return hexChars[v >> 4] + hexChars[v & 0xf];
+  if (v < 4096) return hexChars[v >> 8] + hexChars[(v >> 4) & 0xf] + hexChars[v & 0xf];
+  return hexChars[v >> 12] + hexChars[(v >> 8) & 0xf] + hexChars[(v >> 4) & 0xf] + hexChars[v & 0xf];
+}
+
 function joinHexGroups(groups: number[], count: number, suffix?: string): string {
-  let result = groups[0].toString(16);
+  let result = uint16Hex(groups[0]);
   for (let i = 1; i < count; i++) {
-    result += `:${groups[i].toString(16)}`;
+    result += `:${uint16Hex(groups[i])}`;
   }
   if (suffix !== undefined) result += `:${suffix}`;
   return result;
@@ -235,14 +269,14 @@ function compressIPv6(groups: number[], count: number, suffix?: string): string 
     let result = "";
     for (let i = 0; i < longestStart; i++) {
       if (i > 0) result += ":";
-      result += groups[i].toString(16);
+      result += uint16Hex(groups[i]);
     }
     result += "::";
     let first = true;
     for (let i = longestStart + longestLen; i < count; i++) {
       if (!first) result += ":";
       first = false;
-      result += groups[i].toString(16);
+      result += uint16Hex(groups[i]);
     }
     if (suffix !== undefined) {
       if (!first) result += ":";
