@@ -5,11 +5,11 @@ const ip4s: Array<string> = [];
 const ip6s: Array<string> = [];
 
 t = performance.now();
-for (let i = 0; i < 1e5; i++) ip4s.push(stringifyIp({number: BigInt(i), version: 4}));
+for (let i = 0; i < 1e6; i++) ip4s.push(stringifyIp({number: BigInt(i), version: 4}));
 console.info(`stringify v4: ${Math.round(performance.now() - t)}ms`);
 
 t = performance.now();
-for (let i = 0; i < 1e5; i++) ip6s.push(stringifyIp({number: BigInt(i), version: 6}));
+for (let i = 0; i < 1e6; i++) ip6s.push(stringifyIp({number: BigInt(i), version: 6}));
 console.info(`stringify v6: ${Math.round(performance.now() - t)}ms`);
 
 t = performance.now();
