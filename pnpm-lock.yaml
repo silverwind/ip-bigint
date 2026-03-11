@@ -18,8 +18,8 @@ importers:
         specifier: 9.39.4
         version: 9.39.4
       eslint-config-silverwind:
-        specifier: 124.0.6
-        version: 124.0.6(eslint@9.39.4)(typescript@5.9.3)
+        specifier: 124.0.7
+        version: 124.0.7(eslint@9.39.4)(typescript@5.9.3)
       jest-extended:
         specifier: 7.0.0
         version: 7.0.0(typescript@5.9.3)
@@ -27,8 +27,8 @@ importers:
         specifier: 0.21.2
         version: 0.21.2(@typescript/native-preview@7.0.0-dev.20260311.1)(typescript@5.9.3)
       tsdown-config-silverwind:
-        specifier: 2.0.0
-        version: 2.0.0(tsdown@0.21.2(@typescript/native-preview@7.0.0-dev.20260311.1)(typescript@5.9.3))
+        specifier: 2.0.1
+        version: 2.0.1(tsdown@0.21.2(@typescript/native-preview@7.0.0-dev.20260311.1)(typescript@5.9.3))
       typescript:
         specifier: 5.9.3
         version: 5.9.3
@@ -928,8 +928,8 @@ packages:
     resolution: {integrity: sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==}
     engines: {node: '>=10'}
 
-  eslint-config-silverwind@124.0.6:
-    resolution: {integrity: sha512-XlQb460ATBsYp/XEPWXHC9c54ucOyh4fH6de0S18vZ0v+bqHmrKQum72pMpFcIpcBA0OSrOyfLytV5qM9yC4Cw==}
+  eslint-config-silverwind@124.0.7:
+    resolution: {integrity: sha512-sEO0FoKwGBOGqYauhDGv60BPP/LHiI5wAE18jXLAbj9aepA0BWwAgNb9Cf7JAAqcmEXKzX3B3BvFp+H6YbKEkQ==}
     hasBin: true
     peerDependencies:
       eslint: '*'
@@ -1343,8 +1343,8 @@ packages:
     peerDependencies:
       typescript: '>=4.8.4'
 
-  tsdown-config-silverwind@2.0.0:
-    resolution: {integrity: sha512-0ov4TyCrUvfnhfB/gUR2g5W1Zl7poXRDq6D7KsrpJlcVNh/1EYkxKGFPknox2uGDmDnsoqcE5Law6YvTEiG1Jw==}
+  tsdown-config-silverwind@2.0.1:
+    resolution: {integrity: sha512-bbkfq2mykIzvPAGssVUBU/lO9cW53eghTVrTdBbC+CpD3AFdA+VJArjjetuxE1eJ0mIAMMoulPeCwxB3F+vg0g==}
     engines: {node: '>=20'}
     peerDependencies:
       tsdown: '*'
@@ -2199,7 +2199,7 @@ snapshots:
 
   escape-string-regexp@4.0.0: {}
 
-  eslint-config-silverwind@124.0.6(eslint@9.39.4)(typescript@5.9.3):
+  eslint-config-silverwind@124.0.7(eslint@9.39.4)(typescript@5.9.3):
     dependencies:
       '@typescript-eslint/parser': 8.57.0(eslint@9.39.4)(typescript@5.9.3)
       eslint: 9.39.4
@@ -2618,7 +2618,7 @@ snapshots:
     dependencies:
       typescript: 5.9.3
 
-  tsdown-config-silverwind@2.0.0(tsdown@0.21.2(@typescript/native-preview@7.0.0-dev.20260311.1)(typescript@5.9.3)):
+  tsdown-config-silverwind@2.0.1(tsdown@0.21.2(@typescript/native-preview@7.0.0-dev.20260311.1)(typescript@5.9.3)):
     dependencies:
       tsdown: 0.21.2(@typescript/native-preview@7.0.0-dev.20260311.1)(typescript@5.9.3)
 
