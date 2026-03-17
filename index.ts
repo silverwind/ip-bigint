@@ -30,13 +30,18 @@ export type StringifyOpts = {
 
 /** Returns the IP version: `4`, `6`, or `0` if not a valid IP */
 export function ipVersion(ip: string): IPVersion {
-  return ip.includes(":") ? 6 : ip.includes(".") ? 4 : 0;
+  for (let i = 0; i < ip.length; i++) {
+    const c = ip.charCodeAt(i);
+    if (c === 58) return 6; // ':'
+    if (c === 46) return 4; // '.'
+  }
+  return 0;
 }
 
 // Reusable buffers for IPv6 group collection (avoids allocation per call)
 const leftGroups = [0, 0, 0, 0, 0, 0, 0, 0];
 const rightGroups = [0, 0, 0, 0, 0, 0, 0, 0];
-// Pre-computed shift amounts for double-colon BigInt construction (indexed by leftCount 1-7)
+// Pre-computed shift amounts for double-colon BigInt construction (indexed by group count 1-7)
 const shiftAmounts = [0n, 112n, 96n, 80n, 64n, 48n, 32n, 16n];
 
 /** Parse an IP address string into a `ParsedIP` object */
@@ -152,18 +157,24 @@ export function parseIp(ip: string): ParsedIP {
              (BigInt(((leftGroups[4] << 16) | leftGroups[5]) >>> 0) << 32n) |
               BigInt(((leftGroups[6] << 16) | leftGroups[7]) >>> 0);
   } else {
-    // Has ::, build left and right parts separately
+    // Has ::, build left and right parts with 32-bit packing to reduce BigInt ops
     let leftNum = 0n;
     if (leftCount > 0) {
-      leftNum = BigInt(leftGroups[0]);
-      for (let i = 1; i < leftCount; i++) {
+      let i = 0;
+      for (; i + 1 < leftCount; i += 2) {
+        leftNum = (leftNum << 32n) | BigInt(((leftGroups[i] << 16) | leftGroups[i + 1]) >>> 0);
+      }
+      if (i < leftCount) {
         leftNum = (leftNum << 16n) | BigInt(leftGroups[i]);
       }
     }
     let rightNum = 0n;
     if (rightCount > 0) {
-      rightNum = BigInt(rightGroups[0]);
-      for (let i = 1; i < rightCount; i++) {
+      let i = 0;
+      for (; i + 1 < rightCount; i += 2) {
+        rightNum = (rightNum << 32n) | BigInt(((rightGroups[i] << 16) | rightGroups[i + 1]) >>> 0);
+      }
+      if (i < rightCount) {
         rightNum = (rightNum << 16n) | BigInt(rightGroups[i]);
       }
     }
@@ -223,8 +234,8 @@ export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {c
 }
 
 /** Round-trip an IP address through `parseIp` and `stringifyIp`, normalizing its representation */
-export function normalizeIp(ip: string, {compress = true, hexify = false, mapv4 = false}: StringifyOpts = {}): string {
-  return stringifyIp(parseIp(ip), {compress, hexify, mapv4});
+export function normalizeIp(ip: string, opts: StringifyOpts = {}): string {
+  return stringifyIp(parseIp(ip), opts);
 }
 
 const hexChars = "0123456789abcdef";
