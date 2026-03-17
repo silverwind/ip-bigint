@@ -36,6 +36,7 @@ Convert a `ParsedIp` object back to an IP address string.
 `opts`: Options `StringifyOpts`
   - `compress`: boolean - Whether to compress the IP. For IPv6, this means the "best representation" all-lowercase shortest possible form. Default: `true`.
   - `hexify`: boolean - Whether to convert IPv4-Mapped IPv6 addresses to hex. Default: `false`.
+  - `mapv4`: boolean - Whether to convert IPv4-Mapped IPv6 addresses (e.g. `::ffff:127.0.0.1`) to plain IPv4 (e.g. `127.0.0.1`). Default: `false`.
 
 ### normalizeIp(ip: string, opts?: StringifyOpts)
 
@@ -44,6 +45,7 @@ Round-trip an IP address through `parseIp` and `stringifyIp`, effectively normal
 `opts`: Options `StringifyOpts`
   - `compress`: boolean - Whether to compress the IP. For IPv6, this means the "best representation" all-lowercase shortest possible form. Default: `true`.
   - `hexify`: boolean - Whether to convert IPv4-Mapped IPv6 addresses to hex. Default: `false`.
+  - `mapv4`: boolean - Whether to convert IPv4-Mapped IPv6 addresses (e.g. `::ffff:127.0.0.1`) to plain IPv4 (e.g. `127.0.0.1`). Default: `false`.
 
 ### max4
 

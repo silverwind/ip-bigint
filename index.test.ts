@@ -74,4 +74,18 @@ test("tests", () => {
   expect(ipVersion("::1.2.3.4")).toEqual(6);
   expect(ipVersion("::")).toEqual(6);
   expect(ipVersion("foo")).toEqual(0);
+
+  // mapv4 option
+  expect(normalizeIp("::ffff:127.0.0.1", {mapv4: true})).toEqual("127.0.0.1");
+  expect(normalizeIp("::ffff:192.168.1.1", {mapv4: true})).toEqual("192.168.1.1");
+  expect(normalizeIp("::ffff:0.0.0.0", {mapv4: true})).toEqual("0.0.0.0");
+  expect(normalizeIp("::ffff:255.255.255.255", {mapv4: true})).toEqual("255.255.255.255");
+  expect(normalizeIp("::ffff:127.0.0.1", {mapv4: false})).toEqual("::ffff:127.0.0.1");
+  expect(normalizeIp("::ffff:127.0.0.1")).toEqual("::ffff:127.0.0.1");
+  expect(normalizeIp("127.0.0.1", {mapv4: true})).toEqual("127.0.0.1");
+  expect(normalizeIp("2001:db8::1", {mapv4: true})).toEqual("2001:db8::1");
+  expect(normalizeIp("::", {mapv4: true})).toEqual("::");
+  expect(stringifyIp(parseIp("::ffff:10.0.0.1"), {mapv4: true})).toEqual("10.0.0.1");
+  expect(normalizeIp("64:ff9b::1.2.3.4", {mapv4: true})).toEqual("64:ff9b::1.2.3.4");
+  expect(normalizeIp("::1.2.3.4", {mapv4: true})).toEqual("::1.2.3.4");
 });

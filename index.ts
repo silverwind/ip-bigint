@@ -1,20 +1,34 @@
+/** Biggest possible IPv4 address as a BigInt */
 export const max4: bigint = 2n ** 32n - 1n;
+/** Biggest possible IPv6 address as a BigInt */
 export const max6: bigint = 2n ** 128n - 1n;
 
+/** IP version: `4` for IPv4, `6` for IPv6, `0` for invalid */
 export type IPVersion = 4 | 6 | 0;
 
+/** Result of parsing an IP address string */
 export type ParsedIP = {
+  /** Numeric representation of the IP address */
   number: bigint,
+  /** IP version: `4` for IPv4, `6` for IPv6 */
   version: IPVersion,
+  /** Whether this is an IPv4-mapped IPv6 address (e.g. `::ffff:127.0.0.1`) */
   ipv4mapped?: boolean,
+  /** IPv6 scope ID (the part after `%`, e.g. `eth0` in `fe80::1%eth0`) */
   scopeid?: string,
 };
 
+/** Options for `stringifyIp` and `normalizeIp` */
 export type StringifyOpts = {
+  /** Whether to compress IPv6 using `::` for longest zero run. Default: `true` */
   compress?: boolean,
+  /** Whether to render IPv4-mapped IPv6 addresses in hex instead of dotted decimal. Default: `false` */
   hexify?: boolean,
+  /** Whether to convert IPv4-mapped IPv6 addresses to plain IPv4. Default: `false` */
+  mapv4?: boolean,
 };
 
+/** Returns the IP version: `4`, `6`, or `0` if not a valid IP */
 export function ipVersion(ip: string): IPVersion {
   return ip.includes(":") ? 6 : ip.includes(".") ? 4 : 0;
 }
@@ -25,6 +39,7 @@ const rightGroups = [0, 0, 0, 0, 0, 0, 0, 0];
 // Pre-computed shift amounts for double-colon BigInt construction (indexed by leftCount 1-7)
 const shiftAmounts = [0n, 112n, 96n, 80n, 64n, 48n, 32n, 16n];
 
+/** Parse an IP address string into a `ParsedIP` object */
 export function parseIp(ip: string): ParsedIP {
   const version = ipVersion(ip);
   if (!version) throw new Error(`Invalid IP address: ${ip}`);
@@ -178,14 +193,23 @@ function extractGroups(number: bigint, groups: number[]): void {
   groups[7] = extractView.getUint16(14, false);
 }
 
-export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {compress = true, hexify = false}: StringifyOpts = {}): string {
+/** Convert a `ParsedIP` object back to an IP address string */
+export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {compress = true, hexify = false, mapv4 = false}: StringifyOpts = {}): string {
   if (version === 4) {
     const num = Number(number);
     return `${(num >>> 24) & 0xff}.${(num >>> 16) & 0xff}.${(num >>> 8) & 0xff}.${num & 0xff}`;
   } else {
-    let ip = "";
-
     extractGroups(number, leftGroups);
+
+    // mapv4: convert true ::ffff:x.x.x.x mapped addresses to plain IPv4
+    if (ipv4mapped && mapv4 &&
+        leftGroups[0] === 0 && leftGroups[1] === 0 && leftGroups[2] === 0 &&
+        leftGroups[3] === 0 && leftGroups[4] === 0 && leftGroups[5] === 0xffff) {
+      const num = extractView.getUint32(12, false);
+      return `${(num >>> 24) & 0xff}.${(num >>> 16) & 0xff}.${(num >>> 8) & 0xff}.${num & 0xff}`;
+    }
+
+    let ip = "";
     if (ipv4mapped && !hexify) {
       const ipv4Num = (leftGroups[6] << 16) | leftGroups[7];
       const ipv4Str = `${(ipv4Num >>> 24) & 0xff}.${(ipv4Num >>> 16) & 0xff}.${(ipv4Num >>> 8) & 0xff}.${ipv4Num & 0xff}`;
@@ -198,8 +222,9 @@ export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {c
   }
 }
 
-export function normalizeIp(ip: string, {compress = true, hexify = false}: StringifyOpts = {}): string {
-  return stringifyIp(parseIp(ip), {compress, hexify});
+/** Round-trip an IP address through `parseIp` and `stringifyIp`, normalizing its representation */
+export function normalizeIp(ip: string, {compress = true, hexify = false, mapv4 = false}: StringifyOpts = {}): string {
+  return stringifyIp(parseIp(ip), {compress, hexify, mapv4});
 }
 
 const hexChars = "0123456789abcdef";
