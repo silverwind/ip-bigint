@@ -111,7 +111,6 @@ export function parseIp(ip: string): ParsedIP {
     } else if (c === 46) { // '.'
       if (!inDottedPart) {
         inDottedPart = true;
-        ipv4mapped = true;
         dottedVal = currentDec;
       } else {
         dottedVal = dottedVal * 256 + currentDec;
@@ -189,6 +188,11 @@ export function parseIp(ip: string): ParsedIP {
       }
     }
     number = leftCount > 0 ? (leftNum << shiftAmounts[leftCount]) | rightNum : rightNum;
+  }
+
+  // Only mark as IPv4-mapped for actual ::ffff:0:0/96 addresses (RFC 5952 Section 5)
+  if (inDottedPart && number >= 0xffff00000000n && number <= 0xffffffffffffn) {
+    ipv4mapped = true;
   }
 
   const res: ParsedIP = {number, version: 6};

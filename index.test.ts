@@ -86,6 +86,6 @@ test("tests", () => {
   expect(normalizeIp("2001:db8::1", {mapv4: true})).toEqual("2001:db8::1");
   expect(normalizeIp("::", {mapv4: true})).toEqual("::");
   expect(stringifyIp(parseIp("::ffff:10.0.0.1"), {mapv4: true})).toEqual("10.0.0.1");
-  expect(normalizeIp("64:ff9b::1.2.3.4", {mapv4: true})).toEqual("64:ff9b::1.2.3.4");
-  expect(normalizeIp("::1.2.3.4", {mapv4: true})).toEqual("::1.2.3.4");
+  expect(normalizeIp("64:ff9b::1.2.3.4", {mapv4: true})).toEqual("64:ff9b::102:304");
+  expect(normalizeIp("::1.2.3.4", {mapv4: true})).toEqual("::102:304");
 });
