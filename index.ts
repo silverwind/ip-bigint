@@ -11,7 +11,7 @@ export type ParsedIP = {
   /** Numeric representation of the IP address */
   number: bigint,
   /** IP version: `4` for IPv4, `6` for IPv6 */
-  version: IPVersion,
+  version: 4 | 6,
   /** Whether this is an IPv4-mapped IPv6 address (e.g. `::ffff:127.0.0.1`) */
   ipv4mapped?: boolean,
   /** IPv6 scope ID (the part after `%`, e.g. `eth0` in `fe80::1%eth0`) */
