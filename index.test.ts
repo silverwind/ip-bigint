@@ -88,4 +88,9 @@ test("tests", () => {
   expect(stringifyIp(parseIp("::ffff:10.0.0.1"), {mapv4: true})).toEqual("10.0.0.1");
   expect(normalizeIp("64:ff9b::1.2.3.4", {mapv4: true})).toEqual("64:ff9b::102:304");
   expect(normalizeIp("::1.2.3.4", {mapv4: true})).toEqual("::102:304");
+
+  expect(normalizeIp("0:0:0:0:0:ffff:127.0.0.1")).toEqual("::ffff:127.0.0.1");
+  expect(normalizeIp("::ffff:127.0.0.1", {compress: false})).toEqual("0:0:0:0:0:ffff:127.0.0.1");
+  expect(normalizeIp("::ffff:127.0.0.1", {hexify: true, compress: false})).toEqual("0:0:0:0:0:ffff:7f00:1");
+  expect(normalizeIp("fe80::1%eth0")).toEqual("fe80::1%eth0");
 });
