@@ -38,15 +38,18 @@ export function ipVersion(ip: string): IPVersion {
   return 0;
 }
 
-// Reusable buffers for IPv6 group collection (avoids allocation per call)
+/** Reusable buffer for collecting IPv6 groups left of `::` */
 const leftGroups = [0, 0, 0, 0, 0, 0, 0, 0];
+/** Reusable buffer for collecting IPv6 groups right of `::` */
 const rightGroups = [0, 0, 0, 0, 0, 0, 0, 0];
-// Pre-computed shift amounts for double-colon BigInt construction (indexed by group count 1-7)
+/** Pre-computed shift amounts for `::` BigInt construction (indexed by group count 1-7) */
 const shiftAmounts = [0n, 112n, 96n, 80n, 64n, 48n, 32n, 16n];
 
-// Precomputed lookup tables for string conversion
+/** Precomputed decimal strings for bytes 0-255 */
 const octetStrings = new Array<string>(256);
+/** Precomputed unpadded hex strings for bytes 0-255 */
 const byteHex = new Array<string>(256);
+/** Precomputed zero-padded hex strings for bytes 0-255 */
 const byteHexPad = new Array<string>(256);
 for (let i = 0; i < 256; i++) {
   octetStrings[i] = String(i);
@@ -54,7 +57,7 @@ for (let i = 0; i < 256; i++) {
   byteHexPad[i] = i.toString(16).padStart(2, "0");
 }
 
-// Shared DataView for BigInt <-> groups conversion
+/** Shared DataView for BigInt to/from IPv6 groups conversion */
 const extractView = new DataView(new ArrayBuffer(16));
 
 /** Parse an IP address string into a `ParsedIP` object */
@@ -201,8 +204,7 @@ export function parseIp(ip: string): ParsedIP {
   return res;
 }
 
-// Extract 8 IPv6 groups as uint16 numbers from a BigInt.
-// Fast path for values ≤ 32 bits; DataView path for larger values.
+/** Extract 8 IPv6 groups as uint16 values from a BigInt */
 function extractGroups(number: bigint, groups: number[]): void {
   const n = Number(number);
   if (n <= 0xFFFFFFFF) {
@@ -224,6 +226,7 @@ function extractGroups(number: bigint, groups: number[]): void {
   groups[7] = extractView.getUint16(14, false);
 }
 
+/** Convert a 32-bit number to dotted-decimal IPv4 string */
 function ipv4Dotted(num: number): string {
   return `${octetStrings[(num >>> 24) & 0xff]}.${octetStrings[(num >>> 16) & 0xff]}.${octetStrings[(num >>> 8) & 0xff]}.${octetStrings[num & 0xff]}`;
 }
@@ -260,11 +263,13 @@ export function normalizeIp(ip: string, opts: StringifyOpts = {}): string {
   return stringifyIp(parseIp(ip), opts);
 }
 
+/** Convert a uint16 to a minimal hex string */
 function uint16Hex(v: number): string {
   if (v < 256) return byteHex[v];
   return byteHex[v >> 8] + byteHexPad[v & 0xff];
 }
 
+/** Join IPv6 hex groups with `:` separators */
 function joinHexGroups(groups: number[], count: number, suffix?: string): string {
   let result = uint16Hex(groups[0]);
   for (let i = 1; i < count; i++) {
@@ -274,7 +279,7 @@ function joinHexGroups(groups: number[], count: number, suffix?: string): string
   return result;
 }
 
-// take the longest or first sequence of 0 groups and replace it with "::"
+/** Compress IPv6 by replacing the longest zero-group run with `::` (RFC 5952 Section 4.2) */
 function compressIPv6(groups: number[], count: number, suffix?: string): string {
   let longestStart = -1;
   let longestLen = 0;
