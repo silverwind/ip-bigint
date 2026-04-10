@@ -1,7 +1,7 @@
 /** Biggest possible IPv4 address as a BigInt */
-export const max4: bigint = 2n ** 32n - 1n;
+export const max4: bigint = 0xFFFFFFFFn;
 /** Biggest possible IPv6 address as a BigInt */
-export const max6: bigint = 2n ** 128n - 1n;
+export const max6: bigint = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn;
 
 /** IP version: `4` for IPv4, `6` for IPv6, `0` for invalid */
 export type IPVersion = 4 | 6 | 0;
@@ -45,20 +45,30 @@ const rightGroups = [0, 0, 0, 0, 0, 0, 0, 0];
 /** Pre-computed shift amounts for `::` BigInt construction (indexed by group count 1-7) */
 const shiftAmounts = [0n, 112n, 96n, 80n, 64n, 48n, 32n, 16n];
 
-/** Precomputed decimal strings for bytes 0-255 */
-const octetStrings = new Array<string>(256);
 /** Precomputed unpadded hex strings for bytes 0-255 */
 const byteHex = new Array<string>(256);
 /** Precomputed zero-padded hex strings for bytes 0-255 */
 const byteHexPad = new Array<string>(256);
-for (let i = 0; i < 256; i++) {
-  octetStrings[i] = String(i);
-  byteHex[i] = i.toString(16);
-  byteHexPad[i] = i.toString(16).padStart(2, "0");
+for (let idx = 0; idx < 256; idx++) {
+  byteHex[idx] = idx.toString(16);
+  byteHexPad[idx] = idx.toString(16).padStart(2, "0");
 }
 
 /** Shared DataView for BigInt to/from IPv6 groups conversion */
 const extractView = new DataView(new ArrayBuffer(16));
+
+/** Pack uint16 groups into a BigInt, processing pairs as uint32 to reduce BigInt ops */
+function packGroups(groups: number[], count: number): bigint {
+  let num = 0n;
+  let idx = 0;
+  for (; idx + 1 < count; idx += 2) {
+    num = (num << 32n) | BigInt(((groups[idx] << 16) | groups[idx + 1]) >>> 0);
+  }
+  if (idx < count) {
+    num = (num << 16n) | BigInt(groups[idx]);
+  }
+  return num;
+}
 
 /** Parse an IP address string into a `ParsedIP` object */
 export function parseIp(ip: string): ParsedIP {
@@ -170,27 +180,12 @@ export function parseIp(ip: string): ParsedIP {
     number = (extractView.getBigUint64(0, false) << 64n) | extractView.getBigUint64(8, false);
   } else {
     // Has ::, build left and right parts with 32-bit packing to reduce BigInt ops
-    let leftNum = 0n;
+    const rightNum = packGroups(rightGroups, rightCount);
     if (leftCount > 0) {
-      let i = 0;
-      for (; i + 1 < leftCount; i += 2) {
-        leftNum = (leftNum << 32n) | BigInt(((leftGroups[i] << 16) | leftGroups[i + 1]) >>> 0);
-      }
-      if (i < leftCount) {
-        leftNum = (leftNum << 16n) | BigInt(leftGroups[i]);
-      }
+      number = (packGroups(leftGroups, leftCount) << shiftAmounts[leftCount]) | rightNum;
+    } else {
+      number = rightNum;
     }
-    let rightNum = 0n;
-    if (rightCount > 0) {
-      let i = 0;
-      for (; i + 1 < rightCount; i += 2) {
-        rightNum = (rightNum << 32n) | BigInt(((rightGroups[i] << 16) | rightGroups[i + 1]) >>> 0);
-      }
-      if (i < rightCount) {
-        rightNum = (rightNum << 16n) | BigInt(rightGroups[i]);
-      }
-    }
-    number = leftCount > 0 ? (leftNum << shiftAmounts[leftCount]) | rightNum : rightNum;
   }
 
   // Only mark as IPv4-mapped for actual ::ffff:0:0/96 addresses (RFC 5952 Section 5)
@@ -228,7 +223,7 @@ function extractGroups(number: bigint, groups: number[]): void {
 
 /** Convert a 32-bit number to dotted-decimal IPv4 string */
 function ipv4Dotted(num: number): string {
-  return `${octetStrings[(num >>> 24) & 0xff]}.${octetStrings[(num >>> 16) & 0xff]}.${octetStrings[(num >>> 8) & 0xff]}.${octetStrings[num & 0xff]}`;
+  return `${(num >>> 24) & 0xff}.${(num >>> 16) & 0xff}.${(num >>> 8) & 0xff}.${num & 0xff}`;
 }
 
 /** Convert a `ParsedIP` object back to an IP address string */
@@ -316,14 +311,13 @@ function compressIPv6(groups: number[], count: number, suffix?: string): string 
       result += uint16Hex(groups[i]);
     }
     result += "::";
-    let first = true;
-    for (let i = longestStart + longestLen; i < count; i++) {
-      if (!first) result += ":";
-      first = false;
+    const afterZeroRun = longestStart + longestLen;
+    for (let i = afterZeroRun; i < count; i++) {
+      if (i > afterZeroRun) result += ":";
       result += uint16Hex(groups[i]);
     }
     if (suffix !== undefined) {
-      if (!first) result += ":";
+      if (afterZeroRun < count) result += ":";
       result += suffix;
     }
     return result;
