@@ -42,7 +42,7 @@ export function ipVersion(ip: string): IPVersion {
 const leftGroups = [0, 0, 0, 0, 0, 0, 0, 0];
 /** Reusable buffer for collecting IPv6 groups right of `::` */
 const rightGroups = [0, 0, 0, 0, 0, 0, 0, 0];
-/** Pre-computed shift amounts for `::` BigInt construction (indexed by group count 1-7) */
+/** Pre-computed shift amounts for `::` BigInt construction (index 0 unused) */
 const shiftAmounts = [0n, 112n, 96n, 80n, 64n, 48n, 32n, 16n];
 
 /** Precomputed unpadded hex strings for bytes 0-255 */
@@ -181,11 +181,9 @@ export function parseIp(ip: string): ParsedIP {
   } else {
     // Has ::, build left and right parts with 32-bit packing to reduce BigInt ops
     const rightNum = packGroups(rightGroups, rightCount);
-    if (leftCount > 0) {
-      number = (packGroups(leftGroups, leftCount) << shiftAmounts[leftCount]) | rightNum;
-    } else {
-      number = rightNum;
-    }
+    number = leftCount > 0 ?
+      (packGroups(leftGroups, leftCount) << shiftAmounts[leftCount]) | rightNum :
+      rightNum;
   }
 
   // Only mark as IPv4-mapped for actual ::ffff:0:0/96 addresses (RFC 5952 Section 5)
@@ -201,8 +199,8 @@ export function parseIp(ip: string): ParsedIP {
 
 /** Extract 8 IPv6 groups as uint16 values from a BigInt */
 function extractGroups(number: bigint, groups: number[]): void {
-  const n = Number(number);
-  if (n <= 0xFFFFFFFF) {
+  if (number <= max4) {
+    const n = Number(number);
     groups[0] = 0; groups[1] = 0; groups[2] = 0; groups[3] = 0;
     groups[4] = 0; groups[5] = 0;
     groups[6] = (n >>> 16) & 0xffff;
@@ -230,27 +228,31 @@ function ipv4Dotted(num: number): string {
 export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {compress = true, hexify = false, mapv4 = false}: StringifyOpts = {}): string {
   if (version === 4) {
     return ipv4Dotted(Number(number));
-  } else {
-    extractGroups(number, leftGroups);
-
-    // mapv4: convert true ::ffff:x.x.x.x mapped addresses to plain IPv4
-    if (ipv4mapped && mapv4 &&
-        leftGroups[0] === 0 && leftGroups[1] === 0 && leftGroups[2] === 0 &&
-        leftGroups[3] === 0 && leftGroups[4] === 0 && leftGroups[5] === 0xffff) {
-      return ipv4Dotted((leftGroups[6] << 16) | leftGroups[7]);
-    }
-
-    let ip = "";
-    if (ipv4mapped && !hexify) {
-      const ipv4Num = (leftGroups[6] << 16) | leftGroups[7];
-      const ipv4Str = ipv4Dotted(ipv4Num);
-      ip = compress ? compressIPv6(leftGroups, 6, ipv4Str) : joinHexGroups(leftGroups, 6, ipv4Str);
-    } else {
-      ip = compress ? compressIPv6(leftGroups, 8) : joinHexGroups(leftGroups, 8);
-    }
-
-    return scopeid ? `${ip}%${scopeid}` : ip;
   }
+
+  if (compress && !ipv4mapped && !scopeid && number <= max4) {
+    const n = Number(number);
+    if (n === 0) return "::";
+    const g7 = n & 0xffff;
+    if (n < 0x10000) return `::${uint16Hex(g7)}`;
+    return `::${uint16Hex((n >>> 16) & 0xffff)}:${uint16Hex(g7)}`;
+  }
+
+  extractGroups(number, leftGroups);
+
+  // mapv4: convert true ::ffff:x.x.x.x mapped addresses to plain IPv4
+  if (ipv4mapped && mapv4 &&
+      leftGroups[0] === 0 && leftGroups[1] === 0 && leftGroups[2] === 0 &&
+      leftGroups[3] === 0 && leftGroups[4] === 0 && leftGroups[5] === 0xffff) {
+    return ipv4Dotted((leftGroups[6] << 16) | leftGroups[7]);
+  }
+
+  const isMapped = ipv4mapped && !hexify;
+  const count = isMapped ? 6 : 8;
+  const suffix = isMapped ? ipv4Dotted((leftGroups[6] << 16) | leftGroups[7]) : undefined;
+  const ip = compress ? compressIPv6(leftGroups, count, suffix) : joinHexGroups(leftGroups, count, suffix);
+
+  return scopeid ? `${ip}%${scopeid}` : ip;
 }
 
 /** Round-trip an IP address through `parseIp` and `stringifyIp`, normalizing its representation */
