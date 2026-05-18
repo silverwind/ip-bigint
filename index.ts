@@ -59,26 +59,37 @@ const extractView = new DataView(new ArrayBuffer(16));
 
 /** Pack uint16 groups into a BigInt, processing pairs as uint32 to reduce BigInt ops */
 function packGroups(groups: number[], count: number): bigint {
-  let num = 0n;
-  let idx = 0;
-  for (; idx + 1 < count; idx += 2) {
-    num = (num << 32n) | BigInt(((groups[idx] << 16) | groups[idx + 1]) >>> 0);
+  if (count === 0) return 0n;
+  let num: bigint;
+  let idx: number;
+  if (count & 1) {
+    num = BigInt(groups[0]);
+    idx = 1;
+  } else {
+    num = BigInt(((groups[0] << 16) | groups[1]) >>> 0);
+    idx = 2;
   }
-  if (idx < count) {
-    num = (num << 16n) | BigInt(groups[idx]);
+  for (; idx < count; idx += 2) {
+    num = (num << 32n) | BigInt(((groups[idx] << 16) | groups[idx + 1]) >>> 0);
   }
   return num;
 }
 
 /** Parse an IP address string into a `ParsedIP` object */
 export function parseIp(ip: string): ParsedIP {
-  const version = ipVersion(ip);
+  const len = ip.length;
+  let version: IPVersion = 0;
+  for (let i = 0; i < len; i++) {
+    const c = ip.charCodeAt(i);
+    if (c === 58) { version = 6; break; }
+    if (c === 46) { version = 4; break; }
+  }
   if (!version) throw new Error(`Invalid IP address: ${ip}`);
 
   if (version === 4) {
     let num = 0;
     let octet = 0;
-    for (let i = 0; i < ip.length; i++) {
+    for (let i = 0; i < len; i++) {
       const c = ip.charCodeAt(i);
       if (c === 46) { // '.'
         num = num * 256 + octet;
@@ -102,8 +113,9 @@ export function parseIp(ip: string): ParsedIP {
   let hasValue = false;
   let inDottedPart = false;
   let dottedVal = 0;
+  let groupStart = 0;
 
-  for (let i = 0; i < ip.length; i++) {
+  for (let i = 0; i < len; i++) {
     const c = ip.charCodeAt(i);
 
     if (c === 58) { // ':'
@@ -114,17 +126,19 @@ export function parseIp(ip: string): ParsedIP {
           leftGroups[leftCount++] = currentHex;
         }
         currentHex = 0;
-        currentDec = 0;
         hasValue = false;
       }
-      if (i + 1 < ip.length && ip.charCodeAt(i + 1) === 58) {
+      if (i + 1 < len && ip.charCodeAt(i + 1) === 58) {
         hasDoubleColon = true;
         i++;
       }
+      groupStart = i + 1;
     } else if (c === 46) { // '.'
       if (!inDottedPart) {
         inDottedPart = true;
-        dottedVal = currentDec;
+        let dec = 0;
+        for (let j = groupStart; j < i; j++) dec = dec * 10 + ip.charCodeAt(j) - 48;
+        dottedVal = dec;
       } else {
         dottedVal = dottedVal * 256 + currentDec;
       }
@@ -137,15 +151,12 @@ export function parseIp(ip: string): ParsedIP {
     } else {
       if (inDottedPart) {
         currentDec = currentDec * 10 + c - 48;
-      } else {
-        if (c <= 57) { // 0-9
-          currentHex = (currentHex << 4) | (c - 48);
-          currentDec = currentDec * 10 + c - 48;
-        } else if (c >= 97) { // a-f
-          currentHex = (currentHex << 4) | (c - 87);
-        } else { // A-F
-          currentHex = (currentHex << 4) | (c - 55);
-        }
+      } else if (c <= 57) { // 0-9
+        currentHex = (currentHex << 4) | (c - 48);
+      } else if (c >= 97) { // a-f
+        currentHex = (currentHex << 4) | (c - 87);
+      } else { // A-F
+        currentHex = (currentHex << 4) | (c - 55);
       }
       hasValue = true;
     }
