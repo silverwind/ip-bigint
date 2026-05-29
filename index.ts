@@ -77,14 +77,9 @@ function packGroups(groups: number[], count: number): bigint {
 
 /** Parse an IP address string into a `ParsedIP` object */
 export function parseIp(ip: string): ParsedIP {
-  const len = ip.length;
-  let version: IPVersion = 0;
-  for (let i = 0; i < len; i++) {
-    const c = ip.charCodeAt(i);
-    if (c === 58) { version = 6; break; }
-    if (c === 46) { version = 4; break; }
-  }
+  const version = ipVersion(ip);
   if (!version) throw new Error(`Invalid IP address: ${ip}`);
+  const len = ip.length;
 
   if (version === 4) {
     let num = 0;
@@ -102,7 +97,6 @@ export function parseIp(ip: string): ParsedIP {
   }
 
   // IPv6: single-pass char-by-char parsing, collecting uint16 groups
-  let ipv4mapped: boolean | undefined;
   let scopeid: string | undefined;
 
   let leftCount = 0;
@@ -198,12 +192,10 @@ export function parseIp(ip: string): ParsedIP {
   }
 
   // Only mark as IPv4-mapped for actual ::ffff:0:0/96 addresses (RFC 5952 Section 5)
-  if (inDottedPart && number >= 0xffff00000000n && number <= 0xffffffffffffn) {
-    ipv4mapped = true;
-  }
+  const ipv4mapped = inDottedPart && number >= 0xffff00000000n && number <= 0xffffffffffffn;
 
   const res: ParsedIP = {number, version: 6};
-  if (ipv4mapped) res.ipv4mapped = ipv4mapped;
+  if (ipv4mapped) res.ipv4mapped = true;
   if (scopeid) res.scopeid = scopeid;
   return res;
 }
