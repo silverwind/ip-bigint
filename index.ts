@@ -234,7 +234,7 @@ export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {c
   }
 
   if (compress && !ipv4mapped && !scopeid && number <= max4) {
-    return compressSmallV6(number);
+    return compressSmallV6(Number(number));
   }
 
   extractGroups(number, leftGroups);
@@ -275,12 +275,15 @@ function joinHexGroups(groups: number[], count: number, suffix?: string): string
   return result;
 }
 
-/** Fast path: compressed IPv6 of a value fitting in 32 bits (no v4-mapped, no scope id) */
-function compressSmallV6(number: bigint): string {
-  const n = Number(number);
+/** Fast path: compressed IPv6 of a value fitting in 32 bits, pre-converted to number (no v4-mapped, no scope id) */
+function compressSmallV6(n: number): string {
   if (n === 0) return "::";
   if (n < 0x10000) return `::${uint16Hex(n)}`;
-  return `::${uint16Hex(n >>> 16)}:${uint16Hex(n & 0xffff)}`;
+  const hi = n >>> 16;
+  const lo = n & 0xffff;
+  // most common shape built without uint16Hex: engines do not optimize the calls as well as this expression
+  if (hi < 256 && lo >= 256) return `::${byteHex[hi]}:${byteHex[lo >> 8] + byteHexPad[lo & 0xff]}`;
+  return `::${uint16Hex(hi)}:${uint16Hex(lo)}`;
 }
 
 /** Compress IPv6 by replacing the longest zero-group run with `::` (RFC 5952 Section 4.2) */
