@@ -38,12 +38,8 @@ export function ipVersion(ip: string): IPVersion {
   return 0;
 }
 
-/** Reusable buffer for collecting IPv6 groups left of `::` */
-const leftGroups = [0, 0, 0, 0, 0, 0, 0, 0];
-/** Reusable buffer for collecting IPv6 groups right of `::` */
-const rightGroups = [0, 0, 0, 0, 0, 0, 0, 0];
-/** Pre-computed shift amounts for `::` BigInt construction (index 0 unused) */
-const shiftAmounts = [0n, 112n, 96n, 80n, 64n, 48n, 32n, 16n];
+/** Reusable buffer holding the 8 IPv6 groups of the address being parsed or stringified */
+const groups = [0, 0, 0, 0, 0, 0, 0, 0];
 
 /** Precomputed unpadded hex strings for bytes 0-255 */
 const byteHex = new Array<string>(256);
@@ -57,22 +53,36 @@ for (let idx = 0; idx < 256; idx++) {
 /** Shared DataView for BigInt to/from IPv6 groups conversion */
 const extractView = new DataView(new ArrayBuffer(16));
 
-/** Pack uint16 groups into a BigInt, processing pairs as uint32 to reduce BigInt ops */
-function packGroups(groups: number[], count: number): bigint {
-  if (count === 0) return 0n;
-  let num: bigint;
-  let idx: number;
-  if (count & 1) {
-    num = BigInt(groups[0]);
-    idx = 1;
-  } else {
-    num = BigInt(((groups[0] << 16) | groups[1]) >>> 0);
-    idx = 2;
+/** Pack the 8 uint16 groups into a BigInt, minimizing the number of BigInt operations */
+function packGroups(): bigint {
+  const w0 = ((groups[0] << 16) | groups[1]) >>> 0;
+  const w1 = ((groups[2] << 16) | groups[3]) >>> 0;
+  const w2 = ((groups[4] << 16) | groups[5]) >>> 0;
+  const w3 = ((groups[6] << 16) | groups[7]) >>> 0;
+
+  // `::`-prefixed low addresses are the most common sparse shape and need a single BigInt op
+  if (!w0 && !w1 && !w2) return BigInt(w3);
+
+  // dense address: assembling two uint64s through the DataView beats four BigInt conversions
+  if (w0 && w1 && w2 && w3) {
+    extractView.setUint32(0, w0, false);
+    extractView.setUint32(4, w1, false);
+    extractView.setUint32(8, w2, false);
+    extractView.setUint32(12, w3, false);
+    return (extractView.getBigUint64(0, false) << 64n) | extractView.getBigUint64(8, false);
   }
-  for (; idx < count; idx += 2) {
-    num = (num << 32n) | BigInt(((groups[idx] << 16) | groups[idx + 1]) >>> 0);
-  }
+
+  // sparse address, as `::` forms tend to be: every zero word skipped is a BigInt op saved
+  let num = w0 ? BigInt(w0) << 96n : 0n;
+  if (w1) num |= BigInt(w1) << 64n;
+  if (w2) num |= BigInt(w2) << 32n;
+  if (w3) num |= BigInt(w3);
   return num;
+}
+
+/** Decode a dotted-decimal octet whose digits were accumulated one per nibble */
+function nibblesToDecimal(v: number): number {
+  return (v >> 8) * 100 + ((v >> 4) & 0xf) * 10 + (v & 0xf);
 }
 
 /** Parse an IP address string into a `ParsedIP` object */
@@ -99,53 +109,37 @@ export function parseIp(ip: string): ParsedIP {
   // IPv6: single-pass char-by-char parsing, collecting uint16 groups
   let scopeid: string | undefined;
 
-  let leftCount = 0;
-  let rightCount = 0;
-  let hasDoubleColon = false;
+  let count = 0;
+  let doubleColonAt = -1;
   let currentHex = 0;
-  let currentDec = 0;
   let hasValue = false;
   let inDottedPart = false;
   let dottedVal = 0;
-  let groupStart = 0;
 
   for (let i = 0; i < len; i++) {
     const c = ip.charCodeAt(i);
 
     if (c === 58) { // ':'
       if (hasValue) {
-        if (hasDoubleColon) {
-          rightGroups[rightCount++] = currentHex;
-        } else {
-          leftGroups[leftCount++] = currentHex;
-        }
+        groups[count++] = currentHex;
         currentHex = 0;
         hasValue = false;
       }
       if (i + 1 < len && ip.charCodeAt(i + 1) === 58) {
-        hasDoubleColon = true;
+        doubleColonAt = count;
         i++;
       }
-      groupStart = i + 1;
     } else if (c === 46) { // '.'
-      if (!inDottedPart) {
-        inDottedPart = true;
-        let dec = 0;
-        for (let j = groupStart; j < i; j++) dec = dec * 10 + ip.charCodeAt(j) - 48;
-        dottedVal = dec;
-      } else {
-        dottedVal = dottedVal * 256 + currentDec;
-      }
+      const octet = nibblesToDecimal(currentHex);
+      dottedVal = inDottedPart ? dottedVal * 256 + octet : octet;
+      inDottedPart = true;
       currentHex = 0;
-      currentDec = 0;
       hasValue = false;
     } else if (c === 37) { // '%'
       scopeid = ip.slice(i + 1);
       break;
     } else {
-      if (inDottedPart) {
-        currentDec = currentDec * 10 + c - 48;
-      } else if (c <= 57) { // 0-9
+      if (c <= 57) { // 0-9
         currentHex = (currentHex << 4) | (c - 48);
       } else if (c >= 97) { // a-f
         currentHex = (currentHex << 4) | (c - 87);
@@ -158,38 +152,24 @@ export function parseIp(ip: string): ParsedIP {
 
   // Handle last value
   if (inDottedPart) {
-    dottedVal = dottedVal * 256 + currentDec;
-    if (hasDoubleColon) {
-      rightGroups[rightCount++] = (dottedVal >>> 16) & 0xffff;
-      rightGroups[rightCount++] = dottedVal & 0xffff;
-    } else {
-      leftGroups[leftCount++] = (dottedVal >>> 16) & 0xffff;
-      leftGroups[leftCount++] = dottedVal & 0xffff;
-    }
+    dottedVal = dottedVal * 256 + nibblesToDecimal(currentHex);
+    groups[count++] = (dottedVal >>> 16) & 0xffff;
+    groups[count++] = dottedVal & 0xffff;
   } else if (hasValue) {
-    if (hasDoubleColon) {
-      rightGroups[rightCount++] = currentHex;
-    } else {
-      leftGroups[leftCount++] = currentHex;
+    groups[count++] = currentHex;
+  }
+
+  // Expand `::` by moving the groups after it to the end and zero-filling the gap
+  if (doubleColonAt !== -1) {
+    for (let src = count - 1, dst = 7; src >= doubleColonAt; src--, dst--) {
+      groups[dst] = groups[src];
+    }
+    for (let idx = doubleColonAt, end = doubleColonAt + 8 - count; idx < end; idx++) {
+      groups[idx] = 0;
     }
   }
 
-  // Build 128-bit BigInt, minimizing BigInt operations
-  let number: bigint;
-  if (!hasDoubleColon) {
-    // Full address: all 8 groups, pack via DataView for fewer BigInt ops
-    extractView.setUint32(0, ((leftGroups[0] << 16) | leftGroups[1]) >>> 0, false);
-    extractView.setUint32(4, ((leftGroups[2] << 16) | leftGroups[3]) >>> 0, false);
-    extractView.setUint32(8, ((leftGroups[4] << 16) | leftGroups[5]) >>> 0, false);
-    extractView.setUint32(12, ((leftGroups[6] << 16) | leftGroups[7]) >>> 0, false);
-    number = (extractView.getBigUint64(0, false) << 64n) | extractView.getBigUint64(8, false);
-  } else {
-    // Has ::, build left and right parts with 32-bit packing to reduce BigInt ops
-    const rightNum = packGroups(rightGroups, rightCount);
-    number = leftCount > 0 ?
-      (packGroups(leftGroups, leftCount) << shiftAmounts[leftCount]) | rightNum :
-      rightNum;
-  }
+  const number = packGroups();
 
   // Only mark as IPv4-mapped for actual ::ffff:0:0/96 addresses (RFC 5952 Section 5)
   const ipv4mapped = inDottedPart && number >= 0xffff00000000n && number <= 0xffffffffffffn;
@@ -201,7 +181,7 @@ export function parseIp(ip: string): ParsedIP {
 }
 
 /** Extract 8 IPv6 groups as uint16 values from a BigInt */
-function extractGroups(number: bigint, groups: number[]): void {
+function extractGroups(number: bigint): void {
   if (number <= max4) {
     const n = Number(number);
     groups[0] = 0; groups[1] = 0; groups[2] = 0; groups[3] = 0;
@@ -237,19 +217,17 @@ export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {c
     return compressSmallV6(Number(number));
   }
 
-  extractGroups(number, leftGroups);
-
-  // mapv4: convert true ::ffff:x.x.x.x mapped addresses to plain IPv4
-  if (ipv4mapped && mapv4 &&
-      leftGroups[0] === 0 && leftGroups[1] === 0 && leftGroups[2] === 0 &&
-      leftGroups[3] === 0 && leftGroups[4] === 0 && leftGroups[5] === 0xffff) {
-    return ipv4Dotted((leftGroups[6] << 16) | leftGroups[7]);
+  // mapv4: convert true ::ffff:x.x.x.x mapped addresses (the ::ffff:0:0/96 range) to plain IPv4
+  if (ipv4mapped && mapv4 && number >= 0xffff00000000n && number <= 0xffffffffffffn) {
+    return ipv4Dotted(Number(number & 0xffffffffn));
   }
+
+  extractGroups(number);
 
   const isMapped = ipv4mapped && !hexify;
   const count = isMapped ? 6 : 8;
-  const suffix = isMapped ? ipv4Dotted((leftGroups[6] << 16) | leftGroups[7]) : undefined;
-  const ip = compress ? compressIPv6(leftGroups, count, suffix) : joinHexGroups(leftGroups, count, suffix);
+  const suffix = isMapped ? ipv4Dotted((groups[6] << 16) | groups[7]) : undefined;
+  const ip = compress ? compressIPv6(count, suffix) : joinHexGroups(count, suffix);
 
   return scopeid ? `${ip}%${scopeid}` : ip;
 }
@@ -266,7 +244,7 @@ function uint16Hex(v: number): string {
 }
 
 /** Join IPv6 hex groups with `:` separators */
-function joinHexGroups(groups: number[], count: number, suffix?: string): string {
+function joinHexGroups(count: number, suffix?: string): string {
   let result = uint16Hex(groups[0]);
   for (let i = 1; i < count; i++) {
     result += `:${uint16Hex(groups[i])}`;
@@ -287,32 +265,22 @@ function compressSmallV6(n: number): string {
 }
 
 /** Compress IPv6 by replacing the longest zero-group run with `::` (RFC 5952 Section 4.2) */
-function compressIPv6(groups: number[], count: number, suffix?: string): string {
+function compressIPv6(count: number, suffix?: string): string {
   let longestStart = -1;
   let longestLen = 0;
-  let currentStart = -1;
   let currentLen = 0;
 
+  // strict `>` keeps the first of several equally long runs (RFC 5952 section 4.2.3)
   for (let i = 0; i < count; i++) {
     if (groups[i] === 0) {
-      if (currentStart === -1) {
-        currentStart = i;
-        currentLen = 1;
-      } else {
-        currentLen++;
+      currentLen++;
+      if (currentLen > longestLen) {
+        longestLen = currentLen;
+        longestStart = i - currentLen + 1;
       }
     } else {
-      if (currentLen > longestLen) {
-        longestStart = currentStart;
-        longestLen = currentLen;
-      }
-      currentStart = -1;
       currentLen = 0;
     }
-  }
-  if (currentLen > longestLen) {
-    longestStart = currentStart;
-    longestLen = currentLen;
   }
 
   // Only compress if we have 2 or more consecutive zeros (RFC 5952 section 4.2.2)
@@ -335,5 +303,5 @@ function compressIPv6(groups: number[], count: number, suffix?: string): string 
     return result;
   }
 
-  return joinHexGroups(groups, count, suffix);
+  return joinHexGroups(count, suffix);
 }

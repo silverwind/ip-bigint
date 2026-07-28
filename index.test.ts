@@ -89,6 +89,12 @@ test("tests", () => {
   expect(normalizeIp("64:ff9b::1.2.3.4", {mapv4: true})).toEqual("64:ff9b::102:304");
   expect(normalizeIp("::1.2.3.4", {mapv4: true})).toEqual("::102:304");
 
+  // zero-padded octets in the embedded IPv4 part
+  expect(normalizeIp("::ffff:001.002.003.004")).toEqual("::ffff:1.2.3.4");
+  expect(normalizeIp("::ffff:0127.0000.00.001")).toEqual("::ffff:127.0.0.1");
+  expect(normalizeIp("::ffff:255.255.255.255")).toEqual("::ffff:255.255.255.255");
+  expect(normalizeIp("64:ff9b::01.02.03.04")).toEqual("64:ff9b::102:304");
+
   expect(normalizeIp("0:0:0:0:0:ffff:127.0.0.1")).toEqual("::ffff:127.0.0.1");
   expect(normalizeIp("::ffff:127.0.0.1", {compress: false})).toEqual("0:0:0:0:0:ffff:127.0.0.1");
   expect(normalizeIp("::ffff:127.0.0.1", {hexify: true, compress: false})).toEqual("0:0:0:0:0:ffff:7f00:1");
