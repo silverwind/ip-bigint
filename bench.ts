@@ -9,6 +9,7 @@ const cases: Array<[string, string]> = [
   ["full v6", "2001:0db8:85a3:1319:8a2e:0370:7344:1234"],
   ["mid v6 ", "2001:db8:85a3::8a2e:370:7344"],
   ["small  ", "fe80::1"],
+  ["low v6 ", "::c0a8:1"],
   ["mapped ", "::ffff:191.239.213.197"],
   ["scoped ", "fe80::1%eth0"],
 ];

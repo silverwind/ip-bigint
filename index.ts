@@ -50,6 +50,14 @@ for (let idx = 0; idx < 256; idx++) {
   byteHexPad[idx] = idx.toString(16).padStart(2, "0");
 }
 
+/** Maps a char code to its hex digit value, or to a negative marker for the IPv6 separators */
+const charValue = new Int8Array(256).fill(-4);
+for (let idx = 0; idx < 10; idx++) charValue[48 + idx] = idx;
+for (let idx = 0; idx < 6; idx++) charValue[97 + idx] = charValue[65 + idx] = 10 + idx;
+charValue[58] = -1; // ':'
+charValue[46] = -2; // '.'
+charValue[37] = -3; // '%'
+
 /** Shared DataView for BigInt to/from IPv6 groups conversion */
 const extractView = new DataView(new ArrayBuffer(16));
 
@@ -117,36 +125,28 @@ export function parseIp(ip: string): ParsedIP {
   let dottedVal = 0;
 
   for (let i = 0; i < len; i++) {
-    const c = ip.charCodeAt(i);
+    const v = charValue[ip.charCodeAt(i)];
 
-    if (c === 58) { // ':'
+    if (v >= 0) { // hex digit
+      currentHex = (currentHex << 4) | v;
+      hasValue = true;
+    } else if (v === -1) { // ':'
       if (hasValue) {
         groups[count++] = currentHex;
         currentHex = 0;
         hasValue = false;
-      }
-      if (i + 1 < len && ip.charCodeAt(i + 1) === 58) {
+      } else if (i) { // second colon of a `::`, excluding the leading colon of forms like `::1`
         doubleColonAt = count;
-        i++;
       }
-    } else if (c === 46) { // '.'
+    } else if (v === -2) { // '.'
       const octet = nibblesToDecimal(currentHex);
       dottedVal = inDottedPart ? dottedVal * 256 + octet : octet;
       inDottedPart = true;
       currentHex = 0;
       hasValue = false;
-    } else if (c === 37) { // '%'
+    } else { // '%'
       scopeid = ip.slice(i + 1);
       break;
-    } else {
-      if (c <= 57) { // 0-9
-        currentHex = (currentHex << 4) | (c - 48);
-      } else if (c >= 97) { // a-f
-        currentHex = (currentHex << 4) | (c - 87);
-      } else { // A-F
-        currentHex = (currentHex << 4) | (c - 55);
-      }
-      hasValue = true;
     }
   }
 
@@ -243,12 +243,11 @@ function uint16Hex(v: number): string {
   return byteHex[v >> 8] + byteHexPad[v & 0xff];
 }
 
-/** Join IPv6 hex groups with `:` separators */
+/** Join IPv6 hex groups with `:` separators, `count` being 6 for a v4-mapped address and 8 otherwise */
 function joinHexGroups(count: number, suffix?: string): string {
-  let result = uint16Hex(groups[0]);
-  for (let i = 1; i < count; i++) {
-    result += `:${uint16Hex(groups[i])}`;
-  }
+  // one flat expression: engines build this with far fewer intermediate strings than a `+=` loop
+  let result = `${uint16Hex(groups[0])}:${uint16Hex(groups[1])}:${uint16Hex(groups[2])}:${uint16Hex(groups[3])}:${uint16Hex(groups[4])}:${uint16Hex(groups[5])}`;
+  if (count === 8) result += `:${uint16Hex(groups[6])}:${uint16Hex(groups[7])}`;
   if (suffix !== undefined) result += `:${suffix}`;
   return result;
 }
@@ -257,11 +256,7 @@ function joinHexGroups(count: number, suffix?: string): string {
 function compressSmallV6(n: number): string {
   if (n === 0) return "::";
   if (n < 0x10000) return `::${uint16Hex(n)}`;
-  const hi = n >>> 16;
-  const lo = n & 0xffff;
-  // most common shape built without uint16Hex: engines do not optimize the calls as well as this expression
-  if (hi < 256 && lo >= 256) return `::${byteHex[hi]}:${byteHex[lo >> 8] + byteHexPad[lo & 0xff]}`;
-  return `::${uint16Hex(hi)}:${uint16Hex(lo)}`;
+  return `::${uint16Hex(n >>> 16)}:${uint16Hex(n & 0xffff)}`;
 }
 
 /** Compress IPv6 by replacing the longest zero-group run with `::` (RFC 5952 Section 4.2) */
@@ -285,16 +280,17 @@ function compressIPv6(count: number, suffix?: string): string {
 
   // Only compress if we have 2 or more consecutive zeros (RFC 5952 section 4.2.2)
   if (longestLen >= 2) {
-    let result = "";
-    for (let i = 0; i < longestStart; i++) {
-      if (i > 0) result += ":";
-      result += uint16Hex(groups[i]);
+    let result = longestStart > 0 ? uint16Hex(groups[0]) : "";
+    for (let i = 1; i < longestStart; i++) {
+      result += `:${uint16Hex(groups[i])}`;
     }
     result += "::";
     const afterZeroRun = longestStart + longestLen;
-    for (let i = afterZeroRun; i < count; i++) {
-      if (i > afterZeroRun) result += ":";
-      result += uint16Hex(groups[i]);
+    if (afterZeroRun < count) {
+      result += uint16Hex(groups[afterZeroRun]);
+      for (let i = afterZeroRun + 1; i < count; i++) {
+        result += `:${uint16Hex(groups[i])}`;
+      }
     }
     if (suffix !== undefined) {
       if (afterZeroRun < count) result += ":";
