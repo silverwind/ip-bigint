@@ -32,8 +32,11 @@ const cases: Array<[string, string]> = [
 
 const ops = 1e6;
 
+// `parse` includes validation, `unchecked` is the same work without it, so the pair shows its cost
+const unchecked = {validate: false};
 for (const [name, ip] of cases) {
   bench(`parse ${name}`, ops, () => parseIp(ip));
+  bench(`parse ${name} unchecked`, ops, () => parseIp(ip, unchecked));
 }
 
 const parsed: ParsedIP[] = cases.map(([, ip]) => parseIp(ip));

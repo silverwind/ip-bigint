@@ -1,3 +1,8 @@
+import {v4 as v4Re, v6 as v6Re} from "cidr-regex";
+
+const re4 = v4Re({exact: true, prefix: "none"});
+const re6 = v6Re({exact: true, prefix: "none"});
+
 /** Biggest possible IPv4 address as a BigInt */
 export const max4: bigint = 0xFFFFFFFFn;
 /** Biggest possible IPv6 address as a BigInt */
@@ -14,8 +19,14 @@ export type ParsedIP = {
   version: 4 | 6,
   /** Whether this is an IPv4-mapped IPv6 address (e.g. `::ffff:127.0.0.1`) */
   ipv4mapped?: boolean,
-  /** IPv6 scope ID (the part after `%`, e.g. `eth0` in `fe80::1%eth0`) */
+  /** IPv6 scope ID (the part after `%`, e.g. `eth0` in `fe80::1%eth0`), validated by cidr-regex */
   scopeid?: string,
+};
+
+/** Options for `parseIp` and `normalizeIp` */
+export type ParseOpts = {
+  /** Whether to reject strings that are not well-formed IP addresses. Default: `true` */
+  validate?: boolean,
 };
 
 /** Options for `stringifyIp` and `normalizeIp` */
@@ -30,6 +41,13 @@ export type StringifyOpts = {
 
 /** Returns the IP version: `4`, `6`, or `0` if not a valid IP */
 export function ipVersion(ip: string): IPVersion {
+  const version = ipFamily(ip);
+  if (!version) return 0;
+  return (version === 4 ? re4 : re6).test(ip) ? version : 0;
+}
+
+/** Which family a string is shaped like, before it is known to be valid. `0` is neither. */
+function ipFamily(ip: string): 4 | 6 | 0 {
   for (let i = 0; i < ip.length; i++) {
     const c = ip.charCodeAt(i);
     if (c === 58) return 6; // ':'
@@ -94,8 +112,8 @@ function nibblesToDecimal(v: number): number {
 }
 
 /** Parse an IP address string into a `ParsedIP` object */
-export function parseIp(ip: string): ParsedIP {
-  const version = ipVersion(ip);
+export function parseIp(ip: string, opts?: ParseOpts): ParsedIP {
+  const version = opts?.validate === false ? ipFamily(ip) : ipVersion(ip);
   if (!version) throw new Error(`Invalid IP address: ${ip}`);
   const len = ip.length;
 
@@ -233,8 +251,8 @@ export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {c
 }
 
 /** Round-trip an IP address through `parseIp` and `stringifyIp`, normalizing its representation */
-export function normalizeIp(ip: string, opts: StringifyOpts = {}): string {
-  return stringifyIp(parseIp(ip), opts);
+export function normalizeIp(ip: string, opts?: StringifyOpts & ParseOpts): string {
+  return stringifyIp(parseIp(ip, opts), opts);
 }
 
 /** Convert a uint16 to a minimal hex string */

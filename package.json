@@ -47,5 +47,8 @@
     "versions": "15.3.1",
     "vitest": "4.1.10",
     "vitest-config-silverwind": "11.5.0"
+  },
+  "dependencies": {
+    "cidr-regex": "^7.1.0"
   }
 }
