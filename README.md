@@ -43,11 +43,11 @@ Convert a `ParsedIP` object back to an IP address string.
   - `hexify`: boolean - Whether to convert IPv4-Mapped IPv6 addresses to hex. Default: `false`.
   - `mapv4`: boolean - Whether to convert IPv4-Mapped IPv6 addresses (e.g. `::ffff:127.0.0.1`) to plain IPv4 (e.g. `127.0.0.1`). Default: `false`.
 
-### normalizeIp(ip: string, opts?: StringifyOpts & ParseOpts)
+### normalizeIp(ip: string, opts?: NormalizeOpts)
 
 Round-trip an IP address through `parseIp` and `stringifyIp`, effectively normalizing its representation.
 
-`opts`: Options `StringifyOpts & ParseOpts`, as documented above.
+`opts`: Options `NormalizeOpts`, which is `validate` plus every `StringifyOpts` key, as documented above.
 
 ### max4
 

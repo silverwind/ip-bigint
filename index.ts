@@ -23,14 +23,26 @@ export type ParsedIP = {
   scopeid?: string,
 };
 
-/** Options for `parseIp` and `normalizeIp` */
+/** Options for `parseIp` */
 export type ParseOpts = {
   /** Whether to reject strings that are not well-formed IP addresses. Default: `true` */
   validate?: boolean,
 };
 
-/** Options for `stringifyIp` and `normalizeIp` */
+/** Options for `stringifyIp` */
 export type StringifyOpts = {
+  /** Whether to compress IPv6 using `::` for longest zero run. Default: `true` */
+  compress?: boolean,
+  /** Whether to render IPv4-mapped IPv6 addresses in hex instead of dotted decimal. Default: `false` */
+  hexify?: boolean,
+  /** Whether to convert IPv4-mapped IPv6 addresses to plain IPv4. Default: `false` */
+  mapv4?: boolean,
+};
+
+/** Options for `normalizeIp` */
+export type NormalizeOpts = {
+  /** Whether to reject strings that are not well-formed IP addresses. Default: `true` */
+  validate?: boolean,
   /** Whether to compress IPv6 using `::` for longest zero run. Default: `true` */
   compress?: boolean,
   /** Whether to render IPv4-mapped IPv6 addresses in hex instead of dotted decimal. Default: `false` */
@@ -251,7 +263,7 @@ export function stringifyIp({number, version, ipv4mapped, scopeid}: ParsedIP, {c
 }
 
 /** Round-trip an IP address through `parseIp` and `stringifyIp`, normalizing its representation */
-export function normalizeIp(ip: string, opts?: StringifyOpts & ParseOpts): string {
+export function normalizeIp(ip: string, opts?: NormalizeOpts): string {
   return stringifyIp(parseIp(ip, opts), opts);
 }
 
