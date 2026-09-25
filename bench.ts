@@ -39,7 +39,7 @@ for (const [name, ip] of cases) {
   bench(`parse ${name} unchecked`, ops, () => parseIp(ip, unchecked));
 }
 
-const parsed: ParsedIP[] = cases.map(([, ip]) => parseIp(ip));
+const parsed: ParsedIP[] = cases.map(entry => parseIp(entry[1]));
 for (const [index, [name]] of cases.entries()) {
   bench(`stringify ${name}`, ops, () => stringifyIp(parsed[index]));
 }
