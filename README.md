@@ -5,6 +5,10 @@
 
 ## Usage
 
+```sh
+pnpm add ip-bigint
+```
+
 ```js
 import {parseIp, stringifyIp, normalizeIp} from "ip-bigint";
 
@@ -59,14 +63,12 @@ A `bigint` value that holds the biggest possible IPv6 address.
 
 ### ipVersion(ip: string)
 
-Returns a integer of the IP version, 4, 6 or 0 if it's not a valid IP address. Before version 10 this only looked for the first `.` or `:`, so it reported a version for malformed strings like `999.1.1.1`, which now return 0.
+Returns an integer of the IP version, 4, 6 or 0 if it's not a valid IP address. Before version 10 this only looked for the first `.` or `:`, so it reported a version for malformed strings like `999.1.1.1`, which now return 0.
 
 ## Related
 
 - [is-cidr](https://github.com/silverwind/is-cidr) - Check if a string is an IP address in CIDR notation
 - [cidr-regex](https://github.com/silverwind/cidr-regex) - Regular expression for matching IP addresses in CIDR notation and bare IP addresses
 - [cidr-tools](https://github.com/silverwind/cidr-tools) - Tools to work with IPv4 and IPv6 CIDR network lists
-
-## License
 
 © [silverwind](https://github.com/silverwind), distributed under BSD licence
