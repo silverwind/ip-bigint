@@ -1,4 +1,4 @@
-import {parseIp, stringifyIp, type ParsedIP} from "./index.ts";
+import {parseIp, stringifyIp} from "./index.ts";
 
 const runs = Number(process.env.BENCH_RUNS) || 5;
 const filter = process.env.BENCH_FILTER;
@@ -39,12 +39,12 @@ for (const [name, ip] of cases) {
   bench(`parse ${name} unchecked`, ops, () => parseIp(ip, unchecked));
 }
 
-const parsed: ParsedIP[] = cases.map(entry => parseIp(entry[1]));
+const parsed = cases.map(entry => parseIp(entry[1]));
 for (const [index, [name]] of cases.entries()) {
   bench(`stringify ${name}`, ops, () => stringifyIp(parsed[index]));
 }
 
 bench("stringify uncompressed", ops, () => stringifyIp(parsed[1], {compress: false}));
-bench("stringify mapv4", ops, () => stringifyIp(parsed[4], {mapv4: true}));
+bench("stringify mapv4", ops, () => stringifyIp(parsed[5], {mapv4: true}));
 
 if (sink === undefined) console.error("sink is empty, results were optimized away");
