@@ -72,9 +72,7 @@ function ipFamily(ip: string): 4 | 6 | 0 {
 /** Reusable buffer holding the 8 IPv6 groups of the address being parsed or stringified */
 const groups = [0, 0, 0, 0, 0, 0, 0, 0];
 
-/** Precomputed unpadded hex strings for bytes 0-255 */
 const byteHex = new Array<string>(256);
-/** Precomputed zero-padded hex strings for bytes 0-255 */
 const byteHexPad = new Array<string>(256);
 for (let idx = 0; idx < 256; idx++) {
   byteHex[idx] = idx.toString(16);
@@ -146,9 +144,7 @@ export function parseIp(ip: string, opts?: ParseOpts): ParsedIP {
     return {number: BigInt(num * 256 + octet), version: 4};
   }
 
-  // IPv6: single-pass char-by-char parsing, collecting uint16 groups
   let scopeid: string | undefined;
-
   let count = 0;
   let doubleColonAt = -1;
   let currentHex = 0;
@@ -182,7 +178,6 @@ export function parseIp(ip: string, opts?: ParseOpts): ParsedIP {
     }
   }
 
-  // Handle last value
   if (inDottedPart) {
     dottedVal = dottedVal * 256 + nibblesToDecimal(currentHex);
     groups[count++] = (dottedVal >>> 16) & 0xffff;
@@ -202,12 +197,9 @@ export function parseIp(ip: string, opts?: ParseOpts): ParsedIP {
   }
 
   const number = packGroups();
-
-  // Only mark as IPv4-mapped for actual ::ffff:0:0/96 addresses (RFC 5952 Section 5)
-  const ipv4mapped = inDottedPart && number >= 0xffff00000000n && number <= 0xffffffffffffn;
-
   const res: ParsedIP = {number, version: 6};
-  if (ipv4mapped) res.ipv4mapped = true;
+  // Only mark as IPv4-mapped for actual ::ffff:0:0/96 addresses (RFC 5952 Section 5)
+  if (inDottedPart && number >= 0xffff00000000n && number <= 0xffffffffffffn) res.ipv4mapped = true;
   if (scopeid) res.scopeid = scopeid;
   return res;
 }

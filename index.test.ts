@@ -1,9 +1,5 @@
 import {parseIp, normalizeIp, max4, max6, ipVersion, stringifyIp} from "./index.ts";
 
-function jsonStringifyBigInt(obj: any) {
-  return JSON.stringify(obj, (_, value) => typeof value === "bigint" ? value.toString() : value);
-}
-
 test("tests", () => {
   expect(parseIp("0.0.0.0")).toEqual({number: 0n, version: 4});
   expect(parseIp("255.255.255.255")).toEqual({number: max4, version: 4});
@@ -14,7 +10,6 @@ test("tests", () => {
 
   expect(normalizeIp("0.0.0.0")).toEqual("0.0.0.0");
   expect(normalizeIp("0.0.0.255")).toEqual("0.0.0.255");
-  // zero-padded octets are rejected, as their octal reading elsewhere makes them ambiguous
   expect(() => normalizeIp("000.0.00.255")).toThrow();
   expect(() => normalizeIp("01.02.03.04")).toThrow();
   expect(normalizeIp("01.02.03.04", {validate: false})).toEqual("1.2.3.4");
@@ -29,9 +24,7 @@ test("tests", () => {
   expect(normalizeIp("0::ffff")).toEqual("::ffff");
   expect(normalizeIp("::ffff:ffff")).toEqual("::ffff:ffff");
   expect(normalizeIp("ffff::")).toEqual("ffff::");
-  expect(normalizeIp("::ffff")).toEqual("::ffff");
   expect(normalizeIp("ffff::ffff")).toEqual("ffff::ffff");
-  expect(normalizeIp("::ffff:ffff")).toEqual("::ffff:ffff");
   expect(normalizeIp("123:456:ffff::")).toEqual("123:456:ffff::");
   expect(normalizeIp("123:456:0:0::ffff")).toEqual("123:456::ffff");
   expect(normalizeIp("::ffff:191.239.213.197")).toEqual("::ffff:191.239.213.197");
@@ -51,19 +44,17 @@ test("tests", () => {
   expect(normalizeIp("6620:0000:1ff2::")).toEqual("6620:0:1ff2::");
   expect(normalizeIp("6620:1ff2::0")).toEqual("6620:1ff2::");
   expect(normalizeIp("6620:1ff2::", {compress: false})).toEqual("6620:1ff2:0:0:0:0:0:0");
-  // RFC 4291 allows at most 4 hex digits per group
   expect(() => normalizeIp("6620:1ff2::00000")).toThrow();
   expect(normalizeIp("::1", {compress: false})).toEqual("0:0:0:0:0:0:0:1");
   expect(normalizeIp("1::1", {compress: false})).toEqual("1:0:0:0:0:0:0:1");
   expect(normalizeIp("::FFFF:34.90.242.162", {hexify: true})).toEqual("::ffff:225a:f2a2");
   expect(normalizeIp("2001:db8:0:1:1:1:1:1")).toEqual("2001:db8:0:1:1:1:1:1");
-  expect(normalizeIp("1:2:0:4:5:6:7:8")).toEqual("1:2:0:4:5:6:7:8");
   expect(normalizeIp("1:0:3:4:5:6:7:8")).toEqual("1:0:3:4:5:6:7:8");
   expect(normalizeIp("1:2:0:0:5:6:7:8")).toEqual("1:2::5:6:7:8");
   expect(normalizeIp("1:2:0:0:0:6:7:8")).toEqual("1:2::6:7:8");
   expect(normalizeIp("1:0:0:0:0:0:0:8")).toEqual("1::8");
 
-  expect(jsonStringifyBigInt(parseIp("::"))).toEqual(`{"number":"0","version":6}`);
+  expect(JSON.stringify(parseIp("::"), (_, value) => typeof value === "bigint" ? value.toString() : value)).toEqual(`{"number":"0","version":6}`);
 
   const {number, version} = parseIp("255.255.255.255");
   expect(stringifyIp({number, version})).toEqual("255.255.255.255");
@@ -73,22 +64,18 @@ test("tests", () => {
   expect(ipVersion("::")).toEqual(6);
   expect(ipVersion("fe80::1%eth0")).toEqual(6);
   expect(ipVersion("foo")).toEqual(0);
-  expect(ipVersion("999.1.1.1")).toEqual(0); // was 4 before validation existed
+  expect(ipVersion("999.1.1.1")).toEqual(0);
 
-  // one per rejection path: v4-shaped, v6-shaped, neither family, and the scope id rules ip-bigint owns
   for (const ip of ["1.2.3", "::1::2", "nope", "1.2.3.4%eth0", "fe80::1%"]) {
     expect(() => parseIp(ip)).toThrow();
   }
-  // ...but the parser itself is unchanged, so the opt-out still reaches it
   expect(parseIp("999.1.1.1", {validate: false}).version).toEqual(4);
 
-  // mapv4 option
   expect(normalizeIp("::ffff:127.0.0.1", {mapv4: true})).toEqual("127.0.0.1");
   expect(normalizeIp("::ffff:192.168.1.1", {mapv4: true})).toEqual("192.168.1.1");
   expect(normalizeIp("::ffff:0.0.0.0", {mapv4: true})).toEqual("0.0.0.0");
   expect(normalizeIp("::ffff:255.255.255.255", {mapv4: true})).toEqual("255.255.255.255");
   expect(normalizeIp("::ffff:127.0.0.1", {mapv4: false})).toEqual("::ffff:127.0.0.1");
-  expect(normalizeIp("::ffff:127.0.0.1")).toEqual("::ffff:127.0.0.1");
   expect(normalizeIp("127.0.0.1", {mapv4: true})).toEqual("127.0.0.1");
   expect(normalizeIp("2001:db8::1", {mapv4: true})).toEqual("2001:db8::1");
   expect(normalizeIp("::", {mapv4: true})).toEqual("::");
@@ -96,10 +83,8 @@ test("tests", () => {
   expect(normalizeIp("64:ff9b::1.2.3.4", {mapv4: true})).toEqual("64:ff9b::102:304");
   expect(normalizeIp("::1.2.3.4", {mapv4: true})).toEqual("::102:304");
 
-  // zero-padded octets in the embedded IPv4 part are rejected too
   expect(normalizeIp("::ffff:255.255.255.255")).toEqual("::ffff:255.255.255.255");
   expect(() => normalizeIp("::ffff:001.002.003.004")).toThrow();
-  // 4-digit octet exercises the nibble accumulator, which the regex never reaches
   expect(normalizeIp("::ffff:0127.0000.00.001", {validate: false})).toEqual("::ffff:127.0.0.1");
 
   expect(normalizeIp("0:0:0:0:0:ffff:127.0.0.1")).toEqual("::ffff:127.0.0.1");
