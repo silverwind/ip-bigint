@@ -194,6 +194,8 @@ export function parseIp(ip: string, opts?: ParseOpts): ParsedIP {
     for (let idx = doubleColonAt, end = doubleColonAt + 8 - count; idx < end; idx++) {
       groups[idx] = 0;
     }
+  } else if (count < 8) {
+    groups.fill(0, count, 8);
   }
 
   const number = packGroups();

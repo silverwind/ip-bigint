@@ -70,6 +70,8 @@ test("tests", () => {
     expect(() => parseIp(ip)).toThrow();
   }
   expect(parseIp("999.1.1.1", {validate: false}).version).toEqual(4);
+  expect(normalizeIp("a:b:c:d:e:f:1:2")).toEqual("a:b:c:d:e:f:1:2");
+  expect(normalizeIp("a:b:c", {validate: false})).toEqual("a:b:c::");
 
   expect(normalizeIp("::ffff:127.0.0.1", {mapv4: true})).toEqual("127.0.0.1");
   expect(normalizeIp("::ffff:192.168.1.1", {mapv4: true})).toEqual("192.168.1.1");
