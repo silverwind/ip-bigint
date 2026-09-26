@@ -2,6 +2,7 @@ import {v4 as v4Re, v6 as v6Re} from "cidr-regex";
 
 const re4 = v4Re({exact: true, prefix: "none"});
 const re6 = v6Re({exact: true, prefix: "none"});
+const re6Short = /^(?:(?:[0-9A-Fa-f]{1,4}:){1,6}:[0-9A-Fa-f]{1,4}|::[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})?)$/; // strict subset of re6, far cheaper to match
 
 /** Biggest possible IPv4 address as a BigInt */
 export const max4: bigint = 0xFFFFFFFFn;
@@ -55,7 +56,7 @@ export type NormalizeOpts = {
 export function ipVersion(ip: string): IPVersion {
   const version = ipFamily(ip);
   if (!version) return 0;
-  return (version === 4 ? re4 : re6).test(ip) ? version : 0;
+  return (version === 4 ? re4.test(ip) : (ip.length <= 11 && re6Short.test(ip)) || re6.test(ip)) ? version : 0;
 }
 
 /** Which family a string is shaped like, before it is known to be valid. `0` is neither. */
@@ -100,6 +101,7 @@ function packGroups(): bigint {
 
   // `::`-prefixed low addresses are the most common sparse shape and need a single BigInt op
   if (!w0 && !w1 && !w2) return BigInt(w3);
+  if (!w0 && !w1 && w2 === 0xffff) return BigInt(0xffff00000000 + w3);
 
   // dense address: assembling two uint64s through the DataView beats four BigInt conversions
   if (w0 && w1 && w2 && w3) {
