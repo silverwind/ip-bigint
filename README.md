@@ -36,7 +36,7 @@ For IPv6 returns `{number, version, [ipv4mapped], [scopeid]}`.
 
 Validation uses [cidr-regex](https://github.com/silverwind/cidr-regex), so it follows the addressing rules: zero-padded IPv4 octets (`01.02.03.04`), IPv6 groups longer than four hex digits, and empty or otherwise malformed scope ids are all rejected. Versions before 10 accepted these and parsed them leniently.
 
-Passing `validate: false` skips the check for input already known to be valid, at the cost of the guarantee: malformed input is then parsed on a best-effort basis and can produce a number above `max4` or `max6` for its version.
+Passing `validate: false` skips the check for input already known to be valid, at the cost of the guarantee: malformed input is then parsed on a best-effort basis and can produce an IPv4 number above `max4`.
 
 ### stringifyIp({number, version, [ipv4mapped], [scopeid]}: ParsedIP, opts?: StringifyOpts)
 
